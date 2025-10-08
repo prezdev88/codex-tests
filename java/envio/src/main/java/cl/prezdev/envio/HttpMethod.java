@@ -1,4 +1,4 @@
-package com.example.httpclient;
+package cl.prezdev.envio;
 
 public enum HttpMethod {
     GET(false),

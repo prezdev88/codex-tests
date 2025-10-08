@@ -1,4 +1,4 @@
-package com.example.httpclient;
+package cl.prezdev.envio;
 
 public record HttpInteractionResult(String formattedBody, String rawRequest, String rawResponse, String errorMessage) {
 

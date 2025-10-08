@@ -1,4 +1,4 @@
-package com.example.httpclient;
+package cl.prezdev.envio;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
