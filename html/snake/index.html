@@ -35,53 +35,45 @@
             background: #051732;
         }
 
-        #hud {
+        #menuBar {
             position: absolute;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 24px;
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.45);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-            max-width: min(520px, 92vw);
-            text-align: center;
-        }
-
-        #top-row {
+            top: 0;
+            left: 0;
             width: 100%;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.55);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(6px);
             flex-wrap: wrap;
+            z-index: 2;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.25);
         }
 
-        #title {
-            margin: 0;
-            font-size: 2.2rem;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-
-        #languagePicker {
+        .menu-section {
             display: flex;
             align-items: center;
             gap: 8px;
             font-weight: 600;
+            color: #ffffff;
         }
 
-        #languagePicker label {
+        #title {
+            margin: 0;
+            font-size: 1.65rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        label {
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
-        #languageSelect {
+        select {
             cursor: pointer;
             border-radius: 999px;
             border: none;
@@ -89,28 +81,30 @@
             font-weight: 600;
             padding: 6px 14px;
             color: #1e3c72;
+            background: #ffffff;
         }
 
         #scoreboard {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
             gap: 18px;
-            font-size: 1.15rem;
+            font-size: 1rem;
+            flex-wrap: wrap;
+            margin-left: auto;
         }
 
         #scoreboard span {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
         }
 
         button {
             cursor: pointer;
-            padding: 10px 20px;
+            padding: 8px 18px;
             border-radius: 999px;
             border: none;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: #1e3c72;
             background: #ffffff;
@@ -127,31 +121,59 @@
             box-shadow: none;
         }
 
+        #infoBar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            text-align: center;
+            max-width: min(520px, 92vw);
+            z-index: 2;
+        }
+
         #instructions {
             margin: 0;
             font-size: 0.95rem;
-            opacity: 0.9;
+            opacity: 0.92;
         }
 
         #credits {
             margin: 0;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             opacity: 0.75;
         }
 
-        @media (max-width: 600px) {
-            #hud {
-                top: 12px;
-                padding: 16px 18px;
-                border-radius: 16px;
+        @media (max-width: 720px) {
+            #menuBar {
+                padding: 10px 16px;
+                gap: 12px;
             }
 
             #title {
-                font-size: 1.7rem;
+                font-size: 1.35rem;
             }
 
-            #languagePicker label {
-                letter-spacing: 0.06em;
+            select {
+                font-size: 0.9rem;
+                padding: 6px 12px;
+            }
+
+            #scoreboard {
+                width: 100%;
+                justify-content: space-between;
+                margin-left: 0;
+            }
+
+            #infoBar {
+                bottom: 16px;
+                padding: 12px 16px;
             }
 
             #instructions {
@@ -163,23 +185,33 @@
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="hud">
-            <div id="top-row">
+        <header id="menuBar">
+            <div class="menu-section">
                 <h1 id="title">Snake</h1>
-                <div id="languagePicker">
-                    <label for="languageSelect" id="languageLabel">Language</label>
-                    <select id="languageSelect">
-                        <option value="en">English</option>
-                        <option value="es">Español</option>
-                    </select>
-                </div>
             </div>
-            <div id="scoreboard">
+            <div class="menu-section">
+                <label for="languageSelect" id="languageLabel">Language</label>
+                <select id="languageSelect">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+            <div class="menu-section">
+                <label for="speedSelect" id="speedLabel">Speed</label>
+                <select id="speedSelect">
+                    <option value="slow">Slow</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="fast">Fast</option>
+                </select>
+            </div>
+            <div class="menu-section" id="scoreboard">
                 <span><span id="scoreLabel">Score:</span> <strong id="scoreValue">0</strong></span>
                 <span><span id="highScoreLabel">High Score:</span> <strong id="highScoreValue">0</strong></span>
             </div>
             <button id="restartButton" type="button">Restart Game</button>
-            <p id="instructions">Use arrow keys or WASD to guide the snake. Press Space to pause or resume.</p>
+        </header>
+        <div id="infoBar">
+            <p id="instructions">Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Adjust the speed from the menu for a different challenge.</p>
             <p id="credits">© Snake Game</p>
         </div>
     </div>
@@ -190,6 +222,8 @@
         const titleElement = document.getElementById("title");
         const languageLabelElement = document.getElementById("languageLabel");
         const languageSelect = document.getElementById("languageSelect");
+        const speedLabelElement = document.getElementById("speedLabel");
+        const speedSelect = document.getElementById("speedSelect");
         const scoreLabelElement = document.getElementById("scoreLabel");
         const highScoreLabelElement = document.getElementById("highScoreLabel");
         const scoreValueElement = document.getElementById("scoreValue");
@@ -203,6 +237,11 @@
         let columns = 0;
         let rows = 0;
         const speedIncreaseInterval = 5;
+        const speedProfiles = {
+            slow: { start: 220, step: 12, min: 120 },
+            normal: { start: 170, step: 14, min: 80 },
+            fast: { start: 130, step: 16, min: 60 }
+        };
 
         const directions = {
             ArrowUp: { x: 0, y: -1 },
@@ -230,28 +269,40 @@
             en: {
                 title: "Snake",
                 languageLabel: "Language",
+                speedLabel: "Speed",
                 pageTitle: "Snake Game",
                 restart: "Restart Game",
-                instructions: "Use arrow keys or WASD to guide the snake. Press Space to pause or resume.",
+                instructions: "Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Adjust the speed from the menu for a different challenge.",
                 scoreLabel: "Score",
                 highScoreLabel: "High Score",
                 footer: "Snake Game",
                 gameOver: "Game Over",
                 finalScore: score => `Final Score: ${score}`,
-                restartPrompt: "Press Restart to play again"
+                restartPrompt: "Press Restart to play again",
+                speeds: {
+                    slow: "Slow",
+                    normal: "Normal",
+                    fast: "Fast"
+                }
             },
             es: {
                 title: "Serpiente",
                 languageLabel: "Idioma",
+                speedLabel: "Velocidad",
                 pageTitle: "Juego de la serpiente",
                 restart: "Reiniciar juego",
-                instructions: "Usa las flechas o WASD para mover la serpiente. Presiona Espacio para pausar o reanudar.",
+                instructions: "Usa las flechas o WASD para mover la serpiente. Presiona Espacio para pausar o reanudar. Ajusta la velocidad desde el menú para cambiar la dificultad.",
                 scoreLabel: "Puntuación",
                 highScoreLabel: "Mejor puntaje",
                 footer: "Juego de la serpiente",
                 gameOver: "Fin del juego",
                 finalScore: score => `Puntuación final: ${score}`,
-                restartPrompt: "Presiona Reiniciar para jugar de nuevo"
+                restartPrompt: "Presiona Reiniciar para jugar de nuevo",
+                speeds: {
+                    slow: "Lenta",
+                    normal: "Normal",
+                    fast: "Rápida"
+                }
             }
         };
 
@@ -266,7 +317,9 @@
         let nextVelocity;
         let gameLoopId;
         let isPaused;
-        let speedLevel;
+        let speedProfile = speedProfiles.normal;
+        let currentInterval = speedProfile.start;
+        let speedStage = 0;
 
         function resizeCanvas() {
             const widthTiles = Math.max(minTiles, Math.floor(window.innerWidth / gridSize));
@@ -292,8 +345,9 @@
             velocity = { x: 1, y: 0 };
             nextVelocity = { ...velocity };
             score = 0;
-            speedLevel = 10;
+            speedStage = 0;
             isPaused = false;
+            applySpeedProfile();
             spawnFood();
             updateScoreboard();
             setGameLoop();
@@ -303,8 +357,24 @@
             if (gameLoopId) {
                 clearInterval(gameLoopId);
             }
-            const interval = Math.max(60, 180 - (speedLevel - 10) * 6);
-            gameLoopId = setInterval(update, interval);
+            gameLoopId = setInterval(update, currentInterval);
+        }
+
+        function calculateInterval() {
+            return Math.max(speedProfile.min, speedProfile.start - speedStage * speedProfile.step);
+        }
+
+        function applySpeedProfile(persist = false) {
+            let selected = speedSelect.value;
+            if (!speedProfiles[selected]) {
+                selected = "normal";
+                speedSelect.value = selected;
+            }
+            speedProfile = speedProfiles[selected];
+            currentInterval = calculateInterval();
+            if (persist) {
+                localStorage.setItem("snakeSpeedPreset", selected);
+            }
         }
 
         function spawnFood() {
@@ -338,7 +408,8 @@
             if (newHead.x === food.x && newHead.y === food.y) {
                 score += 1;
                 if (score % speedIncreaseInterval === 0) {
-                    speedLevel += 1;
+                    speedStage += 1;
+                    currentInterval = calculateInterval();
                     setGameLoop();
                 }
                 spawnFood();
@@ -418,6 +489,17 @@
             highScoreLabelElement.textContent = `${translation.highScoreLabel}:`;
         }
 
+        function updateSpeedLabels() {
+            const translation = translations[currentLanguage];
+            speedLabelElement.textContent = translation.speedLabel;
+            Array.from(speedSelect.options).forEach(option => {
+                const label = translation.speeds[option.value];
+                if (label) {
+                    option.textContent = label;
+                }
+            });
+        }
+
         function endGame() {
             clearInterval(gameLoopId);
             const translation = translations[currentLanguage];
@@ -473,6 +555,7 @@
             }
             titleElement.textContent = translation.title;
             languageLabelElement.textContent = translation.languageLabel;
+            updateSpeedLabels();
             restartButton.textContent = translation.restart;
             instructionsElement.textContent = translation.instructions;
             creditsElement.textContent = `© ${currentYear} ${translation.footer}`;
@@ -486,6 +569,10 @@
         languageSelect.addEventListener("change", event => {
             setLanguage(event.target.value, false);
         });
+        speedSelect.addEventListener("change", () => {
+            applySpeedProfile(true);
+            setGameLoop();
+        });
 
         window.addEventListener("resize", () => {
             resizeCanvas();
@@ -494,6 +581,10 @@
         });
 
         const savedLanguage = localStorage.getItem("snakeLanguage") || "en";
+        const savedSpeed = localStorage.getItem("snakeSpeedPreset");
+        if (savedSpeed && speedProfiles[savedSpeed]) {
+            speedSelect.value = savedSpeed;
+        }
         resizeCanvas();
         setLanguage(savedLanguage);
         highScoreValueElement.textContent = highScore;
