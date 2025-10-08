@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at top, #1e3c72, #2a5298);
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            flex: 1 1 auto;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: #051732;
+        }
+
+        #hud {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 24px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+            max-width: min(520px, 92vw);
+            text-align: center;
+        }
+
+        #top-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #title {
+            margin: 0;
+            font-size: 2.2rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        #languagePicker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        #languagePicker label {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.85rem;
+        }
+
+        #languageSelect {
+            cursor: pointer;
+            border-radius: 999px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            color: #1e3c72;
+        }
+
+        #scoreboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px;
+            font-size: 1.15rem;
+        }
+
+        #scoreboard span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 999px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e3c72;
+            background: #ffffff;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        #instructions {
+            margin: 0;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        #credits {
+            margin: 0;
+            font-size: 0.85rem;
+            opacity: 0.75;
+        }
+
+        @media (max-width: 600px) {
+            #hud {
+                top: 12px;
+                padding: 16px 18px;
+                border-radius: 16px;
+            }
+
+            #title {
+                font-size: 1.7rem;
+            }
+
+            #languagePicker label {
+                letter-spacing: 0.06em;
+            }
+
+            #instructions {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud">
+            <div id="top-row">
+                <h1 id="title">Snake</h1>
+                <div id="languagePicker">
+                    <label for="languageSelect" id="languageLabel">Language</label>
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
+            </div>
+            <div id="scoreboard">
+                <span><span id="scoreLabel">Score:</span> <strong id="scoreValue">0</strong></span>
+                <span><span id="highScoreLabel">High Score:</span> <strong id="highScoreValue">0</strong></span>
+            </div>
+            <button id="restartButton" type="button">Restart Game</button>
+            <p id="instructions">Use arrow keys or WASD to guide the snake. Press Space to pause or resume.</p>
+            <p id="credits">© Snake Game</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const context = canvas.getContext("2d");
+        const titleElement = document.getElementById("title");
+        const languageLabelElement = document.getElementById("languageLabel");
+        const languageSelect = document.getElementById("languageSelect");
+        const scoreLabelElement = document.getElementById("scoreLabel");
+        const highScoreLabelElement = document.getElementById("highScoreLabel");
+        const scoreValueElement = document.getElementById("scoreValue");
+        const highScoreValueElement = document.getElementById("highScoreValue");
+        const restartButton = document.getElementById("restartButton");
+        const instructionsElement = document.getElementById("instructions");
+        const creditsElement = document.getElementById("credits");
+
+        const gridSize = 20;
+        const minTiles = 12;
+        let columns = 0;
+        let rows = 0;
+        const speedIncreaseInterval = 5;
+
+        const directions = {
+            ArrowUp: { x: 0, y: -1 },
+            ArrowDown: { x: 0, y: 1 },
+            ArrowLeft: { x: -1, y: 0 },
+            ArrowRight: { x: 1, y: 0 },
+            KeyW: { x: 0, y: -1 },
+            KeyS: { x: 0, y: 1 },
+            KeyA: { x: -1, y: 0 },
+            KeyD: { x: 1, y: 0 }
+        };
+
+        const oppositeDirections = {
+            ArrowUp: "ArrowDown",
+            ArrowDown: "ArrowUp",
+            ArrowLeft: "ArrowRight",
+            ArrowRight: "ArrowLeft",
+            KeyW: "KeyS",
+            KeyS: "KeyW",
+            KeyA: "KeyD",
+            KeyD: "KeyA"
+        };
+
+        const translations = {
+            en: {
+                title: "Snake",
+                languageLabel: "Language",
+                pageTitle: "Snake Game",
+                restart: "Restart Game",
+                instructions: "Use arrow keys or WASD to guide the snake. Press Space to pause or resume.",
+                scoreLabel: "Score",
+                highScoreLabel: "High Score",
+                footer: "Snake Game",
+                gameOver: "Game Over",
+                finalScore: score => `Final Score: ${score}`,
+                restartPrompt: "Press Restart to play again"
+            },
+            es: {
+                title: "Serpiente",
+                languageLabel: "Idioma",
+                pageTitle: "Juego de la serpiente",
+                restart: "Reiniciar juego",
+                instructions: "Usa las flechas o WASD para mover la serpiente. Presiona Espacio para pausar o reanudar.",
+                scoreLabel: "Puntuación",
+                highScoreLabel: "Mejor puntaje",
+                footer: "Juego de la serpiente",
+                gameOver: "Fin del juego",
+                finalScore: score => `Puntuación final: ${score}`,
+                restartPrompt: "Presiona Reiniciar para jugar de nuevo"
+            }
+        };
+
+        let currentLanguage = "en";
+        const currentYear = new Date().getFullYear();
+
+        let snake;
+        let food;
+        let score = 0;
+        let highScore = Number(localStorage.getItem("snakeHighScore")) || 0;
+        let velocity;
+        let nextVelocity;
+        let gameLoopId;
+        let isPaused;
+        let speedLevel;
+
+        function resizeCanvas() {
+            const widthTiles = Math.max(minTiles, Math.floor(window.innerWidth / gridSize));
+            const heightTiles = Math.max(minTiles, Math.floor(window.innerHeight / gridSize));
+            canvas.width = widthTiles * gridSize;
+            canvas.height = heightTiles * gridSize;
+            columns = widthTiles;
+            rows = heightTiles;
+        }
+
+        function createInitialSnake() {
+            const startX = Math.max(2, Math.floor(columns / 2));
+            const startY = Math.floor(rows / 2);
+            return [
+                { x: startX, y: startY },
+                { x: startX - 1, y: startY },
+                { x: startX - 2, y: startY }
+            ];
+        }
+
+        function resetGameState() {
+            snake = createInitialSnake();
+            velocity = { x: 1, y: 0 };
+            nextVelocity = { ...velocity };
+            score = 0;
+            speedLevel = 10;
+            isPaused = false;
+            spawnFood();
+            updateScoreboard();
+            setGameLoop();
+        }
+
+        function setGameLoop() {
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+            }
+            const interval = Math.max(60, 180 - (speedLevel - 10) * 6);
+            gameLoopId = setInterval(update, interval);
+        }
+
+        function spawnFood() {
+            let newFood;
+            do {
+                newFood = {
+                    x: Math.floor(Math.random() * columns),
+                    y: Math.floor(Math.random() * rows)
+                };
+            } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+            food = newFood;
+        }
+
+        function update() {
+            if (isPaused) {
+                return;
+            }
+            velocity = nextVelocity;
+            const newHead = {
+                x: snake[0].x + velocity.x,
+                y: snake[0].y + velocity.y
+            };
+
+            if (isOutOfBounds(newHead) || isCollidingWithSelf(newHead)) {
+                endGame();
+                return;
+            }
+
+            snake.unshift(newHead);
+
+            if (newHead.x === food.x && newHead.y === food.y) {
+                score += 1;
+                if (score % speedIncreaseInterval === 0) {
+                    speedLevel += 1;
+                    setGameLoop();
+                }
+                spawnFood();
+            } else {
+                snake.pop();
+            }
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("snakeHighScore", String(highScore));
+            }
+
+            draw();
+            updateScoreboard();
+        }
+
+        function isOutOfBounds(position) {
+            return (
+                position.x < 0 ||
+                position.y < 0 ||
+                position.x >= columns ||
+                position.y >= rows
+            );
+        }
+
+        function isCollidingWithSelf(position) {
+            return snake.some(segment => segment.x === position.x && segment.y === position.y);
+        }
+
+        function draw() {
+            context.fillStyle = "#051732";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            context.fillStyle = "#ff4757";
+            context.beginPath();
+            context.arc(
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2,
+                gridSize / 2.5,
+                0,
+                Math.PI * 2
+            );
+            context.fill();
+
+            snake.forEach((segment, index) => {
+                const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, "#7bed9f");
+                gradient.addColorStop(1, "#2ed573");
+                context.fillStyle = gradient;
+                const radius = index === 0 ? 6 : 4;
+                drawRoundedSquare(segment.x * gridSize, segment.y * gridSize, gridSize, radius);
+            });
+        }
+
+        function drawRoundedSquare(x, y, size, radius) {
+            context.beginPath();
+            context.moveTo(x + radius, y);
+            context.lineTo(x + size - radius, y);
+            context.quadraticCurveTo(x + size, y, x + size, y + radius);
+            context.lineTo(x + size, y + size - radius);
+            context.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+            context.lineTo(x + radius, y + size);
+            context.quadraticCurveTo(x, y + size, x, y + size - radius);
+            context.lineTo(x, y + radius);
+            context.quadraticCurveTo(x, y, x + radius, y);
+            context.fill();
+        }
+
+        function updateScoreboard() {
+            scoreValueElement.textContent = score;
+            highScoreValueElement.textContent = highScore;
+        }
+
+        function updateScoreboardLabels() {
+            const translation = translations[currentLanguage];
+            scoreLabelElement.textContent = `${translation.scoreLabel}:`;
+            highScoreLabelElement.textContent = `${translation.highScoreLabel}:`;
+        }
+
+        function endGame() {
+            clearInterval(gameLoopId);
+            const translation = translations[currentLanguage];
+            context.fillStyle = "rgba(0, 0, 0, 0.6)";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = "#ffffff";
+            context.font = "32px 'Segoe UI', sans-serif";
+            context.textAlign = "center";
+            context.fillText(translation.gameOver, canvas.width / 2, canvas.height / 2 - 24);
+            context.font = "20px 'Segoe UI', sans-serif";
+            context.fillText(translation.finalScore(score), canvas.width / 2, canvas.height / 2 + 8);
+            context.font = "18px 'Segoe UI', sans-serif";
+            context.fillText(translation.restartPrompt, canvas.width / 2, canvas.height / 2 + 36);
+        }
+
+        function handleKeyDown(event) {
+            if (event.code === "Space") {
+                togglePause();
+                return;
+            }
+
+            const newDirection = directions[event.code];
+            if (!newDirection) {
+                return;
+            }
+
+            const opposite = oppositeDirections[event.code];
+            if (opposite && velocityMatches(nextVelocity, directions[opposite])) {
+                return;
+            }
+
+            nextVelocity = { ...newDirection };
+        }
+
+        function velocityMatches(a, b) {
+            return a.x === b.x && a.y === b.y;
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+
+        function setLanguage(language, updateSelect = true) {
+            if (!translations[language]) {
+                language = "en";
+            }
+            currentLanguage = language;
+            const translation = translations[currentLanguage];
+            document.documentElement.lang = currentLanguage;
+            document.title = translation.pageTitle;
+            if (updateSelect) {
+                languageSelect.value = currentLanguage;
+            }
+            titleElement.textContent = translation.title;
+            languageLabelElement.textContent = translation.languageLabel;
+            restartButton.textContent = translation.restart;
+            instructionsElement.textContent = translation.instructions;
+            creditsElement.textContent = `© ${currentYear} ${translation.footer}`;
+            updateScoreboardLabels();
+            updateScoreboard();
+            localStorage.setItem("snakeLanguage", currentLanguage);
+        }
+
+        restartButton.addEventListener("click", resetGameState);
+        document.addEventListener("keydown", handleKeyDown);
+        languageSelect.addEventListener("change", event => {
+            setLanguage(event.target.value, false);
+        });
+
+        window.addEventListener("resize", () => {
+            resizeCanvas();
+            resetGameState();
+            setLanguage(currentLanguage, false);
+        });
+
+        const savedLanguage = localStorage.getItem("snakeLanguage") || "en";
+        resizeCanvas();
+        setLanguage(savedLanguage);
+        highScoreValueElement.textContent = highScore;
+        resetGameState();
+    </script>
+</body>
+</html>
