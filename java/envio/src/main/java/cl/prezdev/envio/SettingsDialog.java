@@ -34,6 +34,11 @@ public class SettingsDialog extends JDialog {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(12, 12));
 
+        this.uiScaleSpinner = createUiScaleSpinner();
+        this.widthSpinner = createWidthSpinner();
+        this.heightSpinner = createHeightSpinner();
+        this.jsonEditor = createJsonEditor();
+
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Gráfico", createVisualPanel());
         tabs.addTab("JSON", createJsonPanel());
@@ -73,29 +78,18 @@ public class SettingsDialog extends JDialog {
 
         panel.add(new JLabel("Escala de interfaz"), gbc);
         gbc.gridx = 1;
-        uiScaleSpinner = new JSpinner(new SpinnerNumberModel((double) workingCopy.getUiScale(), 0.5, 2.5, 0.05));
-        workingCopy.setUiScale(((Double) uiScaleSpinner.getValue()).floatValue());
-        uiScaleSpinner.addChangeListener(spinnerListener(value -> workingCopy.setUiScale(value.floatValue())));
         panel.add(uiScaleSpinner, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
         panel.add(new JLabel("Ancho de ventana"), gbc);
         gbc.gridx = 1;
-        int widthValue = Math.max(workingCopy.getWindowWidth(), 800);
-        widthSpinner = new JSpinner(new SpinnerNumberModel(widthValue, 400, 4096, 10));
-        workingCopy.setWindowWidth((Integer) widthSpinner.getValue());
-        widthSpinner.addChangeListener(spinnerListener(value -> workingCopy.setWindowWidth(value.intValue())));
         panel.add(widthSpinner, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
         panel.add(new JLabel("Alto de ventana"), gbc);
         gbc.gridx = 1;
-        int heightValue = Math.max(workingCopy.getWindowHeight(), 600);
-        heightSpinner = new JSpinner(new SpinnerNumberModel(heightValue, 300, 2160, 10));
-        workingCopy.setWindowHeight((Integer) heightSpinner.getValue());
-        heightSpinner.addChangeListener(spinnerListener(value -> workingCopy.setWindowHeight(value.intValue())));
         panel.add(heightSpinner, gbc);
 
         gbc.gridx = 0;
@@ -132,12 +126,39 @@ public class SettingsDialog extends JDialog {
 
     private JPanel createJsonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        jsonEditor = new JTextArea(20, 60);
-        jsonEditor.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         panel.add(new JScrollPane(jsonEditor), BorderLayout.CENTER);
         JLabel infoLabel = new JLabel("Modifique el JSON y presione Guardar para aplicar los cambios.");
         panel.add(infoLabel, BorderLayout.SOUTH);
         return panel;
+    }
+
+    private JSpinner createUiScaleSpinner() {
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel((double) workingCopy.getUiScale(), 0.5, 2.5, 0.05));
+        workingCopy.setUiScale(((Double) spinner.getValue()).floatValue());
+        spinner.addChangeListener(spinnerListener(value -> workingCopy.setUiScale(value.floatValue())));
+        return spinner;
+    }
+
+    private JSpinner createWidthSpinner() {
+        int widthValue = Math.max(workingCopy.getWindowWidth(), 800);
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(widthValue, 400, 4096, 10));
+        workingCopy.setWindowWidth((Integer) spinner.getValue());
+        spinner.addChangeListener(spinnerListener(value -> workingCopy.setWindowWidth(value.intValue())));
+        return spinner;
+    }
+
+    private JSpinner createHeightSpinner() {
+        int heightValue = Math.max(workingCopy.getWindowHeight(), 600);
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(heightValue, 300, 2160, 10));
+        workingCopy.setWindowHeight((Integer) spinner.getValue());
+        spinner.addChangeListener(spinnerListener(value -> workingCopy.setWindowHeight(value.intValue())));
+        return spinner;
+    }
+
+    private JTextArea createJsonEditor() {
+        JTextArea editor = new JTextArea(20, 60);
+        editor.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        return editor;
     }
 
     private ChangeListener spinnerListener(Consumer<Number> consumer) {
