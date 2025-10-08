@@ -238,9 +238,9 @@
         let rows = 0;
         const speedIncreaseInterval = 5;
         const speedProfiles = {
-            slow: { start: 220, step: 12, min: 120 },
-            normal: { start: 170, step: 14, min: 80 },
-            fast: { start: 130, step: 16, min: 60 }
+            slow: { start: 130, step: 16, min: 60 },
+            normal: { start: 100, step: 18, min: 45 },
+            fast: { start: 75, step: 20, min: 30 }
         };
 
         const directions = {
@@ -492,6 +492,37 @@
                 const radius = index === 0 ? 6 : 4;
                 drawRoundedSquare(segment.x * gridSize, segment.y * gridSize, gridSize, radius);
             });
+
+            const interval = getActiveInterval();
+            const pixelsPerSecond = Math.round((gridSize * 1000) / interval);
+            const headX = snake[0].x * gridSize + gridSize / 2;
+            const headY = snake[0].y * gridSize;
+            const textY = Math.max(16, headY - 8);
+            const label = `${pixelsPerSecond} px/s`;
+            context.font = "16px 'Segoe UI', sans-serif";
+            const paddingX = context.measureText(label).width / 2 + 8;
+            const paddingY = 14;
+            context.fillStyle = "rgba(0, 0, 0, 0.4)";
+            drawRoundedRectangle(headX - paddingX, textY - paddingY, paddingX * 2, paddingY * 2, 10);
+            context.fillStyle = "#ffffff";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText(label, headX, textY);
+        }
+
+        function drawRoundedRectangle(x, y, width, height, radius) {
+            context.beginPath();
+            context.moveTo(x + radius, y);
+            context.lineTo(x + width - radius, y);
+            context.quadraticCurveTo(x + width, y, x + width, y + radius);
+            context.lineTo(x + width, y + height - radius);
+            context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            context.lineTo(x + radius, y + height);
+            context.quadraticCurveTo(x, y + height, x, y + height - radius);
+            context.lineTo(x, y + radius);
+            context.quadraticCurveTo(x, y, x + radius, y);
+            context.closePath();
+            context.fill();
         }
 
         function drawRoundedSquare(x, y, size, radius) {
