@@ -211,7 +211,7 @@
             <button id="restartButton" type="button">Restart Game</button>
         </header>
         <div id="infoBar">
-            <p id="instructions">Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Adjust the speed from the menu for a different challenge.</p>
+            <p id="instructions">Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Hold a direction key to move a little faster. Adjust the speed from the menu for a different challenge.</p>
             <p id="credits">© Snake Game</p>
         </div>
     </div>
@@ -272,7 +272,7 @@
                 speedLabel: "Speed",
                 pageTitle: "Snake Game",
                 restart: "Restart Game",
-                instructions: "Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Adjust the speed from the menu for a different challenge.",
+                instructions: "Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Hold a direction key to move a little faster. Adjust the speed from the menu for a different challenge.",
                 scoreLabel: "Score",
                 highScoreLabel: "High Score",
                 footer: "Snake Game",
@@ -291,7 +291,7 @@
                 speedLabel: "Velocidad",
                 pageTitle: "Juego de la serpiente",
                 restart: "Reiniciar juego",
-                instructions: "Usa las flechas o WASD para mover la serpiente. Presiona Espacio para pausar o reanudar. Ajusta la velocidad desde el menú para cambiar la dificultad.",
+                instructions: "Usa las flechas o WASD para mover la serpiente. Presiona Espacio para pausar o reanudar. Mantén presionada una tecla de dirección para avanzar un poco más rápido. Ajusta la velocidad desde el menú para cambiar la dificultad.",
                 scoreLabel: "Puntuación",
                 highScoreLabel: "Mejor puntaje",
                 footer: "Juego de la serpiente",
@@ -318,8 +318,11 @@
         let gameLoopId;
         let isPaused;
         let speedProfile = speedProfiles.normal;
-        let currentInterval = speedProfile.start;
         let speedStage = 0;
+        const speedBoostFactor = 0.8;
+        const heldDirectionKeys = new Set();
+        let boostActive = false;
+        let isGameRunning = false;
 
         function resizeCanvas() {
             const widthTiles = Math.max(minTiles, Math.floor(window.innerWidth / gridSize));
@@ -341,27 +344,47 @@
         }
 
         function resetGameState() {
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
             snake = createInitialSnake();
             velocity = { x: 1, y: 0 };
             nextVelocity = { ...velocity };
             score = 0;
             speedStage = 0;
             isPaused = false;
+            heldDirectionKeys.clear();
+            boostActive = false;
+            isGameRunning = true;
             applySpeedProfile();
             spawnFood();
             updateScoreboard();
-            setGameLoop();
         }
 
-        function setGameLoop() {
+        function getBaseInterval() {
+            return Math.max(speedProfile.min, speedProfile.start - speedStage * speedProfile.step);
+        }
+
+        function getActiveInterval() {
+            const baseInterval = getBaseInterval();
+            if (!boostActive) {
+                return baseInterval;
+            }
+            const boostedInterval = Math.round(baseInterval * speedBoostFactor);
+            const minimumBoostInterval = Math.round(speedProfile.min * speedBoostFactor);
+            return Math.max(minimumBoostInterval, boostedInterval);
+        }
+
+        function refreshGameLoop() {
+            if (!isGameRunning) {
+                return;
+            }
+            const interval = getActiveInterval();
             if (gameLoopId) {
                 clearInterval(gameLoopId);
             }
-            gameLoopId = setInterval(update, currentInterval);
-        }
-
-        function calculateInterval() {
-            return Math.max(speedProfile.min, speedProfile.start - speedStage * speedProfile.step);
+            gameLoopId = setInterval(update, interval);
         }
 
         function applySpeedProfile(persist = false) {
@@ -371,10 +394,18 @@
                 speedSelect.value = selected;
             }
             speedProfile = speedProfiles[selected];
-            currentInterval = calculateInterval();
             if (persist) {
                 localStorage.setItem("snakeSpeedPreset", selected);
             }
+            refreshGameLoop();
+        }
+
+        function setBoostState(active) {
+            if (boostActive === active) {
+                return;
+            }
+            boostActive = active;
+            refreshGameLoop();
         }
 
         function spawnFood() {
@@ -409,8 +440,7 @@
                 score += 1;
                 if (score % speedIncreaseInterval === 0) {
                     speedStage += 1;
-                    currentInterval = calculateInterval();
-                    setGameLoop();
+                    refreshGameLoop();
                 }
                 spawnFood();
             } else {
@@ -501,7 +531,13 @@
         }
 
         function endGame() {
-            clearInterval(gameLoopId);
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+            }
+            gameLoopId = null;
+            isGameRunning = false;
+            heldDirectionKeys.clear();
+            boostActive = false;
             const translation = translations[currentLanguage];
             context.fillStyle = "rgba(0, 0, 0, 0.6)";
             context.fillRect(0, 0, canvas.width, canvas.height);
@@ -526,12 +562,25 @@
                 return;
             }
 
+            heldDirectionKeys.add(event.code);
+            setBoostState(true);
+
             const opposite = oppositeDirections[event.code];
             if (opposite && velocityMatches(nextVelocity, directions[opposite])) {
                 return;
             }
 
             nextVelocity = { ...newDirection };
+        }
+
+        function handleKeyUp(event) {
+            if (!directions[event.code]) {
+                return;
+            }
+            heldDirectionKeys.delete(event.code);
+            if (heldDirectionKeys.size === 0) {
+                setBoostState(false);
+            }
         }
 
         function velocityMatches(a, b) {
@@ -566,12 +615,12 @@
 
         restartButton.addEventListener("click", resetGameState);
         document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
         languageSelect.addEventListener("change", event => {
             setLanguage(event.target.value, false);
         });
         speedSelect.addEventListener("change", () => {
             applySpeedProfile(true);
-            setGameLoop();
         });
 
         window.addEventListener("resize", () => {
