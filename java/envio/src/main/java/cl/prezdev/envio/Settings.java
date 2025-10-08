@@ -3,14 +3,20 @@ package cl.prezdev.envio;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Settings {
+    @Setter
     private float uiScale = 1.0f;
+    @Setter
     private int windowWidth = -1;
+    @Setter
     private int windowHeight = -1;
     private final Map<String, Float> componentScales = new LinkedHashMap<>();
 
@@ -38,34 +44,6 @@ public class Settings {
         this.windowHeight = other.windowHeight;
         this.componentScales.clear();
         this.componentScales.putAll(other.componentScales);
-    }
-
-    public float getUiScale() {
-        return uiScale;
-    }
-
-    public void setUiScale(float uiScale) {
-        this.uiScale = uiScale;
-    }
-
-    public int getWindowWidth() {
-        return windowWidth;
-    }
-
-    public void setWindowWidth(int windowWidth) {
-        this.windowWidth = windowWidth;
-    }
-
-    public int getWindowHeight() {
-        return windowHeight;
-    }
-
-    public void setWindowHeight(int windowHeight) {
-        this.windowHeight = windowHeight;
-    }
-
-    public Map<String, Float> getComponentScales() {
-        return componentScales;
     }
 
     @JsonIgnore

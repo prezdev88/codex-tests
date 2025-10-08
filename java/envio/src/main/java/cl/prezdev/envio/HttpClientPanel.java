@@ -211,10 +211,26 @@ public class HttpClientPanel extends JPanel {
         float scaledSize = baseMonospacedFont.getSize2D() * uiScale * componentScale;
         Font codeFont = baseMonospacedFont.deriveFont(scaledSize);
         component.setFont(codeFont);
+        if (component == jsonResponsePane) {
+            updateJsonStyles(codeFont);
+        }
         if (component instanceof JTree tree) {
             int rowHeight = Math.max(16, Math.round(codeFont.getSize2D() * 1.4f));
             tree.setRowHeight(rowHeight);
         }
+    }
+
+    private void updateJsonStyles(Font font) {
+        applyFontToStyle(defaultStyle, font);
+        applyFontToStyle(keyStyle, font);
+        applyFontToStyle(stringStyle, font);
+        applyFontToStyle(numberStyle, font);
+        applyFontToStyle(literalStyle, font);
+    }
+
+    private void applyFontToStyle(Style style, Font font) {
+        StyleConstants.setFontFamily(style, font.getFamily());
+        StyleConstants.setFontSize(style, Math.round(font.getSize2D()));
     }
 
     public void applySettings() {
