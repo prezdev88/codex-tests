@@ -15,6 +15,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ItemEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HttpClientPanel extends JPanel {
 
@@ -24,6 +26,7 @@ public class HttpClientPanel extends JPanel {
     private static final String BASE_FONT_PROPERTY = "base-font";
     private static final float MIN_CODE_FONT_SCALE = 0.5f;
     private static final float MAX_CODE_FONT_SCALE = 3.0f;
+    private static final String CODE_FONT_SCALE_PROPERTY = "code-font-scale";
 
     private final JComboBox<HttpMethod> methodComboBox = new JComboBox<>(HttpMethod.values());
     private final JTextField urlField = new JTextField("https://jsonplaceholder.typicode.com/posts/1", 40);
@@ -46,7 +49,7 @@ public class HttpClientPanel extends JPanel {
     private final ObjectMapper jsonMapper = new ObjectMapper();
     private final Font baseMonospacedFont = new Font(Font.MONOSPACED, Font.PLAIN, 13);
     private float uiScale = 1.0f;
-    private float codeFontScale = 1.0f;
+    private final List<JComponent> codeZoomComponents = new ArrayList<>();
 
     public HttpClientPanel() {
         defaultStyle = styleContext.getStyle(StyleContext.DEFAULT_STYLE);
@@ -145,37 +148,55 @@ public class HttpClientPanel extends JPanel {
     }
 
     private void installCodeFontZoom(JComponent component) {
+        if (!codeZoomComponents.contains(component)) {
+            codeZoomComponents.add(component);
+        }
+        component.putClientProperty(CODE_FONT_SCALE_PROPERTY, getCodeFontScale(component));
         component.addMouseWheelListener(event -> {
             if (event.isControlDown()) {
                 event.consume();
                 int rotation = event.getWheelRotation();
                 if (rotation < 0) {
-                    adjustCodeFontScale(0.1f);
+                    adjustCodeFontScale(component, 0.1f);
                 } else if (rotation > 0) {
-                    adjustCodeFontScale(-0.1f);
+                    adjustCodeFontScale(component, -0.1f);
                 }
             }
         });
     }
 
-    private void adjustCodeFontScale(float delta) {
-        float newScale = Math.max(MIN_CODE_FONT_SCALE, Math.min(MAX_CODE_FONT_SCALE, codeFontScale + delta));
-        if (Math.abs(newScale - codeFontScale) > 0.001f) {
-            codeFontScale = newScale;
-            updateCodeFonts();
+    private void adjustCodeFontScale(JComponent component, float delta) {
+        float currentScale = getCodeFontScale(component);
+        float newScale = Math.max(MIN_CODE_FONT_SCALE, Math.min(MAX_CODE_FONT_SCALE, currentScale + delta));
+        if (Math.abs(newScale - currentScale) > 0.001f) {
+            component.putClientProperty(CODE_FONT_SCALE_PROPERTY, newScale);
+            updateCodeFontForComponent(component);
         }
     }
 
+    private float getCodeFontScale(JComponent component) {
+        Object value = component.getClientProperty(CODE_FONT_SCALE_PROPERTY);
+        if (value instanceof Number number) {
+            return number.floatValue();
+        }
+        return 1.0f;
+    }
+
     private void updateCodeFonts() {
-        float scaledSize = baseMonospacedFont.getSize2D() * uiScale * codeFontScale;
+        for (JComponent component : codeZoomComponents) {
+            updateCodeFontForComponent(component);
+        }
+    }
+
+    private void updateCodeFontForComponent(JComponent component) {
+        float componentScale = getCodeFontScale(component);
+        float scaledSize = baseMonospacedFont.getSize2D() * uiScale * componentScale;
         Font codeFont = baseMonospacedFont.deriveFont(scaledSize);
-        requestBodyArea.setFont(codeFont);
-        rawRequestArea.setFont(codeFont);
-        rawResponseArea.setFont(codeFont);
-        jsonResponsePane.setFont(codeFont);
-        jsonTree.setFont(codeFont);
-        int rowHeight = Math.max(16, Math.round(codeFont.getSize2D() * 1.4f));
-        jsonTree.setRowHeight(rowHeight);
+        component.setFont(codeFont);
+        if (component instanceof JTree tree) {
+            int rowHeight = Math.max(16, Math.round(codeFont.getSize2D() * 1.4f));
+            tree.setRowHeight(rowHeight);
+        }
     }
 
     private JPanel createInputPanel() {
