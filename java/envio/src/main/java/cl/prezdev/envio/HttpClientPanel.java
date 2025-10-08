@@ -8,15 +8,18 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 import java.awt.event.ItemEvent;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public class HttpClientPanel extends JPanel {
 
@@ -27,6 +30,7 @@ public class HttpClientPanel extends JPanel {
     private static final float MIN_CODE_FONT_SCALE = 0.5f;
     private static final float MAX_CODE_FONT_SCALE = 3.0f;
     private static final String CODE_FONT_SCALE_PROPERTY = "code-font-scale";
+    private static final String CODE_FONT_ID_PROPERTY = "code-font-id";
 
     private final JComboBox<HttpMethod> methodComboBox = new JComboBox<>(HttpMethod.values());
     private final JTextField urlField = new JTextField("https://jsonplaceholder.typicode.com/posts/1", 40);
@@ -49,9 +53,13 @@ public class HttpClientPanel extends JPanel {
     private final ObjectMapper jsonMapper = new ObjectMapper();
     private final Font baseMonospacedFont = new Font(Font.MONOSPACED, Font.PLAIN, 13);
     private float uiScale = 1.0f;
-    private final List<JComponent> codeZoomComponents = new ArrayList<>();
+    private final Map<String, JComponent> codeZoomComponents = new LinkedHashMap<>();
+    private final Settings settings;
+    private final Consumer<Settings> settingsChangedListener;
 
-    public HttpClientPanel() {
+    public HttpClientPanel(Settings settings, Consumer<Settings> settingsChangedListener) {
+        this.settings = settings;
+        this.settingsChangedListener = settingsChangedListener;
         defaultStyle = styleContext.getStyle(StyleContext.DEFAULT_STYLE);
         keyStyle = styleContext.addStyle("json-key", defaultStyle);
         StyleConstants.setForeground(keyStyle, new Color(204, 120, 50));
@@ -86,15 +94,19 @@ public class HttpClientPanel extends JPanel {
         toggleRequestBody();
 
         registerBaseFonts(this);
-        installCodeFontZoom(requestBodyArea);
-        installCodeFontZoom(rawRequestArea);
-        installCodeFontZoom(rawResponseArea);
-        installCodeFontZoom(jsonResponsePane);
-        installCodeFontZoom(jsonTree);
-        updateCodeFonts();
+        installCodeFontZoom("requestBody", requestBodyArea);
+        installCodeFontZoom("rawRequest", rawRequestArea);
+        installCodeFontZoom("rawResponse", rawResponseArea);
+        installCodeFontZoom("jsonResponse", jsonResponsePane);
+        installCodeFontZoom("jsonTree", jsonTree);
+        applySettings();
     }
 
     public void setUiScale(float scale) {
+        setUiScale(scale, true);
+    }
+
+    private void setUiScale(float scale, boolean updateSettings) {
         if (scale <= 0f) {
             return;
         }
@@ -107,6 +119,10 @@ public class HttpClientPanel extends JPanel {
         updateCodeFonts();
         revalidate();
         repaint();
+        if (updateSettings) {
+            settings.setUiScale(uiScale);
+            persistSettings();
+        }
     }
 
     private void registerBaseFonts(Component component) {
@@ -147,11 +163,10 @@ public class HttpClientPanel extends JPanel {
         }
     }
 
-    private void installCodeFontZoom(JComponent component) {
-        if (!codeZoomComponents.contains(component)) {
-            codeZoomComponents.add(component);
-        }
-        component.putClientProperty(CODE_FONT_SCALE_PROPERTY, getCodeFontScale(component));
+    private void installCodeFontZoom(String id, JComponent component) {
+        codeZoomComponents.put(id, component);
+        component.putClientProperty(CODE_FONT_ID_PROPERTY, id);
+        component.putClientProperty(CODE_FONT_SCALE_PROPERTY, settings.getComponentScale(id));
         component.addMouseWheelListener(event -> {
             if (event.isControlDown()) {
                 event.consume();
@@ -171,6 +186,11 @@ public class HttpClientPanel extends JPanel {
         if (Math.abs(newScale - currentScale) > 0.001f) {
             component.putClientProperty(CODE_FONT_SCALE_PROPERTY, newScale);
             updateCodeFontForComponent(component);
+            Object idValue = component.getClientProperty(CODE_FONT_ID_PROPERTY);
+            if (idValue instanceof String id) {
+                settings.setComponentScale(id, newScale);
+                persistSettings();
+            }
         }
     }
 
@@ -183,7 +203,7 @@ public class HttpClientPanel extends JPanel {
     }
 
     private void updateCodeFonts() {
-        for (JComponent component : codeZoomComponents) {
+        for (JComponent component : codeZoomComponents.values()) {
             updateCodeFontForComponent(component);
         }
     }
@@ -193,9 +213,49 @@ public class HttpClientPanel extends JPanel {
         float scaledSize = baseMonospacedFont.getSize2D() * uiScale * componentScale;
         Font codeFont = baseMonospacedFont.deriveFont(scaledSize);
         component.setFont(codeFont);
+        if (component == jsonResponsePane) {
+            updateJsonStyles(codeFont);
+            refreshJsonDocumentFont(codeFont);
+        }
         if (component instanceof JTree tree) {
             int rowHeight = Math.max(16, Math.round(codeFont.getSize2D() * 1.4f));
             tree.setRowHeight(rowHeight);
+        }
+    }
+
+    private void updateJsonStyles(Font font) {
+        applyFontToStyle(defaultStyle, font);
+        applyFontToStyle(keyStyle, font);
+        applyFontToStyle(stringStyle, font);
+        applyFontToStyle(numberStyle, font);
+        applyFontToStyle(literalStyle, font);
+    }
+
+    private void applyFontToStyle(Style style, Font font) {
+        StyleConstants.setFontFamily(style, font.getFamily());
+        StyleConstants.setFontSize(style, Math.round(font.getSize2D()));
+    }
+
+    private void refreshJsonDocumentFont(Font font) {
+        SimpleAttributeSet attributes = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(attributes, font.getFamily());
+        StyleConstants.setFontSize(attributes, Math.round(font.getSize2D()));
+        jsonDocument.setCharacterAttributes(0, jsonDocument.getLength(), attributes, false);
+    }
+
+    public void applySettings() {
+        setUiScale(settings.getUiScale(), false);
+        for (Map.Entry<String, JComponent> entry : codeZoomComponents.entrySet()) {
+            String id = entry.getKey();
+            JComponent component = entry.getValue();
+            component.putClientProperty(CODE_FONT_SCALE_PROPERTY, settings.getComponentScale(id));
+        }
+        updateCodeFonts();
+    }
+
+    private void persistSettings() {
+        if (settingsChangedListener != null) {
+            settingsChangedListener.accept(settings);
         }
     }
 
@@ -351,6 +411,16 @@ public class HttpClientPanel extends JPanel {
         tree.setRootVisible(true);
         tree.setShowsRootHandles(true);
         tree.setFont(baseMonospacedFont);
+        tree.setCellRenderer(new DefaultTreeCellRenderer() {
+            @Override
+            public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
+                                                          boolean expanded, boolean leaf, int row,
+                                                          boolean hasFocus) {
+                Component component = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+                component.setFont(tree.getFont());
+                return component;
+            }
+        });
         return tree;
     }
 
