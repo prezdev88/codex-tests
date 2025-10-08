@@ -8,11 +8,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.util.LinkedHashMap;
@@ -213,6 +215,7 @@ public class HttpClientPanel extends JPanel {
         component.setFont(codeFont);
         if (component == jsonResponsePane) {
             updateJsonStyles(codeFont);
+            refreshJsonDocumentFont(codeFont);
         }
         if (component instanceof JTree tree) {
             int rowHeight = Math.max(16, Math.round(codeFont.getSize2D() * 1.4f));
@@ -231,6 +234,13 @@ public class HttpClientPanel extends JPanel {
     private void applyFontToStyle(Style style, Font font) {
         StyleConstants.setFontFamily(style, font.getFamily());
         StyleConstants.setFontSize(style, Math.round(font.getSize2D()));
+    }
+
+    private void refreshJsonDocumentFont(Font font) {
+        SimpleAttributeSet attributes = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(attributes, font.getFamily());
+        StyleConstants.setFontSize(attributes, Math.round(font.getSize2D()));
+        jsonDocument.setCharacterAttributes(0, jsonDocument.getLength(), attributes, false);
     }
 
     public void applySettings() {
@@ -401,6 +411,16 @@ public class HttpClientPanel extends JPanel {
         tree.setRootVisible(true);
         tree.setShowsRootHandles(true);
         tree.setFont(baseMonospacedFont);
+        tree.setCellRenderer(new DefaultTreeCellRenderer() {
+            @Override
+            public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
+                                                          boolean expanded, boolean leaf, int row,
+                                                          boolean hasFocus) {
+                Component component = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+                component.setFont(tree.getFont());
+                return component;
+            }
+        });
         return tree;
     }
 
