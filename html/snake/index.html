@@ -10,86 +10,94 @@
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: radial-gradient(circle at top, #1e3c72, #2a5298);
+            background: radial-gradient(circle at top, #13253f, #020b18 70%);
             color: #ffffff;
             overflow: hidden;
         }
 
-        #game-container {
-            position: relative;
-            flex: 1 1 auto;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        #gameCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            background: #051732;
-        }
-
-        #menuBar {
-            position: absolute;
+        header {
+            position: sticky;
             top: 0;
-            left: 0;
-            width: 100%;
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 12px 24px;
-            background: rgba(0, 0, 0, 0.55);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(6px);
-            flex-wrap: wrap;
-            z-index: 2;
+            gap: 18px;
+            padding: 10px 24px;
+            background: rgba(3, 14, 30, 0.8);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(8px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+            z-index: 3;
         }
 
-        .menu-section {
+        header h1 {
+            margin: 0;
+            font-size: 1.45rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .menu-block {
             display: flex;
             align-items: center;
             gap: 8px;
             font-weight: 600;
-            color: #ffffff;
         }
 
-        #title {
-            margin: 0;
-            font-size: 1.65rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
-
-        label {
+        .menu-block label {
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            font-size: 0.8rem;
+            opacity: 0.85;
+        }
+
+        select,
+        button {
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
 
         select {
-            cursor: pointer;
-            border-radius: 999px;
-            border: none;
-            font-size: 0.95rem;
-            font-weight: 600;
-            padding: 6px 14px;
-            color: #1e3c72;
+            color: #0a3460;
             background: #ffffff;
         }
 
+        button {
+            color: #0a3460;
+            background: linear-gradient(135deg, #ffffff, #c8e0ff);
+        }
+
+        button:hover,
+        select:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+        }
+
+        button:active,
+        select:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
         #scoreboard {
+            margin-left: auto;
             display: flex;
-            gap: 18px;
+            gap: 16px;
             font-size: 1rem;
             flex-wrap: wrap;
-            margin-left: auto;
         }
 
         #scoreboard span {
@@ -99,151 +107,224 @@
             white-space: nowrap;
         }
 
-        button {
-            cursor: pointer;
-            padding: 8px 18px;
-            border-radius: 999px;
-            border: none;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #1e3c72;
-            background: #ffffff;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        main {
+            position: relative;
+            flex: 1 1 auto;
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #041532 0%, #01070f 65%);
         }
 
-        button:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
-
-        #infoBar {
+        #info-panel {
             position: absolute;
-            bottom: 24px;
             left: 50%;
+            bottom: 26px;
             transform: translateX(-50%);
+            max-width: min(540px, 92vw);
+            padding: 16px 22px;
+            border-radius: 18px;
+            background: rgba(3, 14, 30, 0.65);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+            text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding: 14px 20px;
-            border-radius: 16px;
-            background: rgba(0, 0, 0, 0.45);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-            text-align: center;
-            max-width: min(520px, 92vw);
+            gap: 8px;
             z-index: 2;
         }
 
-        #instructions {
+        #info-panel p {
             margin: 0;
+        }
+
+        #info-panel .instructions {
             font-size: 0.95rem;
+            line-height: 1.5;
             opacity: 0.92;
         }
 
-        #credits {
-            margin: 0;
+        #info-panel .credit {
             font-size: 0.8rem;
-            opacity: 0.75;
+            opacity: 0.7;
         }
 
-        @media (max-width: 720px) {
-            #menuBar {
-                padding: 10px 16px;
+        .toast {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(3, 14, 30, 0.8);
+            padding: 10px 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .toast.visible {
+            opacity: 1;
+        }
+
+        @media (max-width: 780px) {
+            header {
+                flex-wrap: wrap;
                 gap: 12px;
+                padding: 10px 16px;
             }
 
-            #title {
-                font-size: 1.35rem;
+            header h1 {
+                font-size: 1.2rem;
             }
 
-            select {
-                font-size: 0.9rem;
+            select,
+            button {
+                font-size: 0.85rem;
                 padding: 6px 12px;
             }
 
             #scoreboard {
+                margin-left: 0;
                 width: 100%;
                 justify-content: space-between;
-                margin-left: 0;
             }
 
-            #infoBar {
-                bottom: 16px;
+            #info-panel {
+                bottom: 18px;
                 padding: 12px 16px;
-            }
-
-            #instructions {
-                font-size: 0.9rem;
             }
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <header id="menuBar">
-            <div class="menu-section">
-                <h1 id="title">Snake</h1>
-            </div>
-            <div class="menu-section">
-                <label for="languageSelect" id="languageLabel">Language</label>
-                <select id="languageSelect">
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                </select>
-            </div>
-            <div class="menu-section">
-                <label for="speedSelect" id="speedLabel">Speed</label>
-                <select id="speedSelect">
-                    <option value="slow">Slow</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="fast">Fast</option>
-                </select>
-            </div>
-            <div class="menu-section" id="scoreboard">
-                <span><span id="scoreLabel">Score:</span> <strong id="scoreValue">0</strong></span>
-                <span><span id="highScoreLabel">High Score:</span> <strong id="highScoreValue">0</strong></span>
-            </div>
-            <button id="restartButton" type="button">Restart Game</button>
-        </header>
-        <div id="infoBar">
-            <p id="instructions">Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Hold a direction key to move a little faster. Adjust the speed from the menu for a different challenge.</p>
-            <p id="credits">© Snake Game</p>
+    <header id="menu">
+        <h1 id="title">Snake</h1>
+        <div class="menu-block">
+            <label for="language-select" id="language-label">Language</label>
+            <select id="language-select">
+                <option value="en">English</option>
+                <option value="es">Español</option>
+            </select>
         </div>
-    </div>
-
+        <div class="menu-block">
+            <label for="speed-select" id="speed-label">Speed</label>
+            <select id="speed-select">
+                <option value="slow">Slow</option>
+                <option value="normal" selected>Normal</option>
+                <option value="fast">Fast</option>
+            </select>
+        </div>
+        <div class="menu-block" id="scoreboard">
+            <span><span id="score-label">Score:</span> <strong id="score-value">0</strong></span>
+            <span><span id="high-score-label">High score:</span> <strong id="high-score-value">0</strong></span>
+        </div>
+        <button id="restart-button" type="button">Restart game</button>
+    </header>
+    <main>
+        <canvas id="game"></canvas>
+        <div id="info-panel">
+            <p class="instructions" id="instructions">Use Arrow keys or WASD to move the snake. Hold a direction to boost a little. Press Space to pause or resume.</p>
+            <p class="credit" id="credit">© Snake Game</p>
+        </div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const context = canvas.getContext("2d");
-        const titleElement = document.getElementById("title");
-        const languageLabelElement = document.getElementById("languageLabel");
-        const languageSelect = document.getElementById("languageSelect");
-        const speedLabelElement = document.getElementById("speedLabel");
-        const speedSelect = document.getElementById("speedSelect");
-        const scoreLabelElement = document.getElementById("scoreLabel");
-        const highScoreLabelElement = document.getElementById("highScoreLabel");
-        const scoreValueElement = document.getElementById("scoreValue");
-        const highScoreValueElement = document.getElementById("highScoreValue");
-        const restartButton = document.getElementById("restartButton");
-        const instructionsElement = document.getElementById("instructions");
-        const creditsElement = document.getElementById("credits");
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        const titleEl = document.getElementById("title");
+        const languageSelect = document.getElementById("language-select");
+        const speedSelect = document.getElementById("speed-select");
+        const languageLabel = document.getElementById("language-label");
+        const speedLabel = document.getElementById("speed-label");
+        const scoreLabel = document.getElementById("score-label");
+        const highScoreLabel = document.getElementById("high-score-label");
+        const scoreValue = document.getElementById("score-value");
+        const highScoreValue = document.getElementById("high-score-value");
+        const restartButton = document.getElementById("restart-button");
+        const instructionsEl = document.getElementById("instructions");
+        const creditEl = document.getElementById("credit");
+        const toastEl = document.getElementById("toast");
 
-        const gridSize = 20;
-        const minTiles = 12;
-        let columns = 0;
-        let rows = 0;
-        const speedIncreaseInterval = 5;
-        const speedProfiles = {
-            slow: { start: 130, step: 16, min: 60 },
-            normal: { start: 100, step: 18, min: 45 },
-            fast: { start: 75, step: 20, min: 30 }
+        const translations = {
+            en: {
+                title: "Snake",
+                pageTitle: "Snake Game",
+                languageLabel: "Language",
+                speedLabel: "Speed",
+                restart: "Restart game",
+                instructions: "Use Arrow keys or WASD to move the snake. Hold a direction to boost a little. Press Space to pause or resume.",
+                scoreLabel: "Score",
+                highScoreLabel: "High score",
+                credit: "Snake Game",
+                toastSpeed: speed => `Speed: ${speed}`,
+                gameOver: "Game over",
+                finalScore: score => `Final score: ${score}`,
+                restartHint: "Press restart to play again",
+                speeds: {
+                    slow: "Slow",
+                    normal: "Normal",
+                    fast: "Fast"
+                }
+            },
+            es: {
+                title: "Serpiente",
+                pageTitle: "Juego de la serpiente",
+                languageLabel: "Idioma",
+                speedLabel: "Velocidad",
+                restart: "Reiniciar juego",
+                instructions: "Usa las flechas o WASD para mover la serpiente. Mantén presionada una dirección para impulsar un poco. Pulsa Espacio para pausar o continuar.",
+                scoreLabel: "Puntuación",
+                highScoreLabel: "Mejor puntaje",
+                credit: "Juego de la serpiente",
+                toastSpeed: speed => `Velocidad: ${speed}`,
+                gameOver: "Fin del juego",
+                finalScore: score => `Puntuación final: ${score}`,
+                restartHint: "Pulsa Reiniciar para volver a jugar",
+                speeds: {
+                    slow: "Lenta",
+                    normal: "Normal",
+                    fast: "Rápida"
+                }
+            }
         };
 
-        const directions = {
+        const gridSize = 20;
+        const minimumTiles = 14;
+        const speedProfiles = {
+            slow: { start: 130, step: 16, min: 60 },
+            normal: { start: 90, step: 18, min: 36 },
+            fast: { start: 65, step: 20, min: 26 }
+        };
+        const boostFactor = 0.75;
+        const autoSpeedIncreaseEvery = 5;
+        const storageKeys = {
+            language: "snakeLanguage",
+            speed: "snakeSpeedPreset",
+            highScore: "snakeHighScore"
+        };
+
+        let columns = 0;
+        let rows = 0;
+        let snake = [];
+        let direction = { x: 1, y: 0 };
+        let nextDirection = { x: 1, y: 0 };
+        let food = null;
+        let intervalId = null;
+        let score = 0;
+        let highScore = Number(localStorage.getItem(storageKeys.highScore)) || 0;
+        let speedStage = 0;
+        let isPaused = false;
+        let isRunning = false;
+        let currentLanguage = "en";
+        let speedProfile = speedProfiles.normal;
+        const heldKeys = new Set();
+        let boostActive = false;
+
+        const directionMap = {
             ArrowUp: { x: 0, y: -1 },
             ArrowDown: { x: 0, y: 1 },
             ArrowLeft: { x: -1, y: 0 },
@@ -254,7 +335,7 @@
             KeyD: { x: 1, y: 0 }
         };
 
-        const oppositeDirections = {
+        const opposites = {
             ArrowUp: "ArrowDown",
             ArrowDown: "ArrowUp",
             ArrowLeft: "ArrowRight",
@@ -265,76 +346,17 @@
             KeyD: "KeyA"
         };
 
-        const translations = {
-            en: {
-                title: "Snake",
-                languageLabel: "Language",
-                speedLabel: "Speed",
-                pageTitle: "Snake Game",
-                restart: "Restart Game",
-                instructions: "Use arrow keys or WASD to guide the snake. Press Space to pause or resume. Hold a direction key to move a little faster. Adjust the speed from the menu for a different challenge.",
-                scoreLabel: "Score",
-                highScoreLabel: "High Score",
-                footer: "Snake Game",
-                gameOver: "Game Over",
-                finalScore: score => `Final Score: ${score}`,
-                restartPrompt: "Press Restart to play again",
-                speeds: {
-                    slow: "Slow",
-                    normal: "Normal",
-                    fast: "Fast"
-                }
-            },
-            es: {
-                title: "Serpiente",
-                languageLabel: "Idioma",
-                speedLabel: "Velocidad",
-                pageTitle: "Juego de la serpiente",
-                restart: "Reiniciar juego",
-                instructions: "Usa las flechas o WASD para mover la serpiente. Presiona Espacio para pausar o reanudar. Mantén presionada una tecla de dirección para avanzar un poco más rápido. Ajusta la velocidad desde el menú para cambiar la dificultad.",
-                scoreLabel: "Puntuación",
-                highScoreLabel: "Mejor puntaje",
-                footer: "Juego de la serpiente",
-                gameOver: "Fin del juego",
-                finalScore: score => `Puntuación final: ${score}`,
-                restartPrompt: "Presiona Reiniciar para jugar de nuevo",
-                speeds: {
-                    slow: "Lenta",
-                    normal: "Normal",
-                    fast: "Rápida"
-                }
-            }
-        };
-
-        let currentLanguage = "en";
-        const currentYear = new Date().getFullYear();
-
-        let snake;
-        let food;
-        let score = 0;
-        let highScore = Number(localStorage.getItem("snakeHighScore")) || 0;
-        let velocity;
-        let nextVelocity;
-        let gameLoopId;
-        let isPaused;
-        let speedProfile = speedProfiles.normal;
-        let speedStage = 0;
-        const speedBoostFactor = 0.8;
-        const heldDirectionKeys = new Set();
-        let boostActive = false;
-        let isGameRunning = false;
-
         function resizeCanvas() {
-            const widthTiles = Math.max(minTiles, Math.floor(window.innerWidth / gridSize));
-            const heightTiles = Math.max(minTiles, Math.floor(window.innerHeight / gridSize));
-            canvas.width = widthTiles * gridSize;
-            canvas.height = heightTiles * gridSize;
+            const widthTiles = Math.max(minimumTiles, Math.floor(window.innerWidth / gridSize));
+            const heightTiles = Math.max(minimumTiles, Math.floor(window.innerHeight / gridSize));
             columns = widthTiles;
             rows = heightTiles;
+            canvas.width = columns * gridSize;
+            canvas.height = rows * gridSize;
         }
 
-        function createInitialSnake() {
-            const startX = Math.max(2, Math.floor(columns / 2));
+        function createSnake() {
+            const startX = Math.max(3, Math.floor(columns / 2));
             const startY = Math.floor(rows / 2);
             return [
                 { x: startX, y: startY },
@@ -343,72 +365,26 @@
             ];
         }
 
-        function resetGameState() {
-            if (gameLoopId) {
-                clearInterval(gameLoopId);
-                gameLoopId = null;
+        function resetGame() {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
             }
-            snake = createInitialSnake();
-            velocity = { x: 1, y: 0 };
-            nextVelocity = { ...velocity };
+            snake = createSnake();
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
             score = 0;
             speedStage = 0;
             isPaused = false;
-            heldDirectionKeys.clear();
-            boostActive = false;
-            isGameRunning = true;
+            isRunning = true;
+            heldKeys.clear();
+            setBoost(false);
+            placeFood();
+            updateScoreDisplay();
             applySpeedProfile();
-            spawnFood();
-            updateScoreboard();
         }
 
-        function getBaseInterval() {
-            return Math.max(speedProfile.min, speedProfile.start - speedStage * speedProfile.step);
-        }
-
-        function getActiveInterval() {
-            const baseInterval = getBaseInterval();
-            if (!boostActive) {
-                return baseInterval;
-            }
-            const boostedInterval = Math.round(baseInterval * speedBoostFactor);
-            const minimumBoostInterval = Math.round(speedProfile.min * speedBoostFactor);
-            return Math.max(minimumBoostInterval, boostedInterval);
-        }
-
-        function refreshGameLoop() {
-            if (!isGameRunning) {
-                return;
-            }
-            const interval = getActiveInterval();
-            if (gameLoopId) {
-                clearInterval(gameLoopId);
-            }
-            gameLoopId = setInterval(update, interval);
-        }
-
-        function applySpeedProfile(persist = false) {
-            let selected = speedSelect.value;
-            if (!speedProfiles[selected]) {
-                selected = "normal";
-                speedSelect.value = selected;
-            }
-            speedProfile = speedProfiles[selected];
-            if (persist) {
-                localStorage.setItem("snakeSpeedPreset", selected);
-            }
-            refreshGameLoop();
-        }
-
-        function setBoostState(active) {
-            if (boostActive === active) {
-                return;
-            }
-            boostActive = active;
-            refreshGameLoop();
-        }
-
-        function spawnFood() {
+        function placeFood() {
             let newFood;
             do {
                 newFood = {
@@ -419,18 +395,18 @@
             food = newFood;
         }
 
-        function update() {
-            if (isPaused) {
+        function tick() {
+            if (!isRunning || isPaused) {
                 return;
             }
-            velocity = nextVelocity;
+            direction = nextDirection;
             const newHead = {
-                x: snake[0].x + velocity.x,
-                y: snake[0].y + velocity.y
+                x: snake[0].x + direction.x,
+                y: snake[0].y + direction.y
             };
 
-            if (isOutOfBounds(newHead) || isCollidingWithSelf(newHead)) {
-                endGame();
+            if (isOutside(newHead) || collidesWithSelf(newHead)) {
+                finishGame();
                 return;
             }
 
@@ -438,148 +414,241 @@
 
             if (newHead.x === food.x && newHead.y === food.y) {
                 score += 1;
-                if (score % speedIncreaseInterval === 0) {
+                if (score % autoSpeedIncreaseEvery === 0) {
                     speedStage += 1;
-                    refreshGameLoop();
+                    restartLoop();
                 }
-                spawnFood();
+                placeFood();
             } else {
                 snake.pop();
             }
 
             if (score > highScore) {
                 highScore = score;
-                localStorage.setItem("snakeHighScore", String(highScore));
+                localStorage.setItem(storageKeys.highScore, String(highScore));
             }
 
-            draw();
-            updateScoreboard();
+            drawScene();
+            updateScoreDisplay();
         }
 
-        function isOutOfBounds(position) {
-            return (
-                position.x < 0 ||
-                position.y < 0 ||
-                position.x >= columns ||
-                position.y >= rows
-            );
+        function isOutside(position) {
+            return position.x < 0 || position.y < 0 || position.x >= columns || position.y >= rows;
         }
 
-        function isCollidingWithSelf(position) {
+        function collidesWithSelf(position) {
             return snake.some(segment => segment.x === position.x && segment.y === position.y);
         }
 
-        function draw() {
-            context.fillStyle = "#051732";
-            context.fillRect(0, 0, canvas.width, canvas.height);
+        function drawScene() {
+            ctx.fillStyle = "#031026";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            context.fillStyle = "#ff4757";
-            context.beginPath();
-            context.arc(
+            // Grid overlay
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+            ctx.lineWidth = 1;
+            for (let x = gridSize; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x + 0.5, 0);
+                ctx.lineTo(x + 0.5, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = gridSize; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y + 0.5);
+                ctx.lineTo(canvas.width, y + 0.5);
+                ctx.stroke();
+            }
+
+            // Food
+            ctx.fillStyle = "#ff4d6d";
+            ctx.beginPath();
+            ctx.arc(
                 food.x * gridSize + gridSize / 2,
                 food.y * gridSize + gridSize / 2,
-                gridSize / 2.5,
+                gridSize / 2.6,
                 0,
                 Math.PI * 2
             );
-            context.fill();
+            ctx.fill();
 
+            // Snake
             snake.forEach((segment, index) => {
-                const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-                gradient.addColorStop(0, "#7bed9f");
-                gradient.addColorStop(1, "#2ed573");
-                context.fillStyle = gradient;
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, "#5efc82");
+                gradient.addColorStop(1, "#2ecc71");
+                ctx.fillStyle = gradient;
                 const radius = index === 0 ? 6 : 4;
                 drawRoundedSquare(segment.x * gridSize, segment.y * gridSize, gridSize, radius);
             });
 
-            const interval = getActiveInterval();
-            const pixelsPerSecond = Math.round((gridSize * 1000) / interval);
-            const headX = snake[0].x * gridSize + gridSize / 2;
-            const headY = snake[0].y * gridSize;
-            const textY = Math.max(16, headY - 8);
-            const label = `${pixelsPerSecond} px/s`;
-            context.font = "16px 'Segoe UI', sans-serif";
-            const paddingX = context.measureText(label).width / 2 + 8;
-            const paddingY = 14;
-            context.fillStyle = "rgba(0, 0, 0, 0.4)";
-            drawRoundedRectangle(headX - paddingX, textY - paddingY, paddingX * 2, paddingY * 2, 10);
-            context.fillStyle = "#ffffff";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillText(label, headX, textY);
-        }
-
-        function drawRoundedRectangle(x, y, width, height, radius) {
-            context.beginPath();
-            context.moveTo(x + radius, y);
-            context.lineTo(x + width - radius, y);
-            context.quadraticCurveTo(x + width, y, x + width, y + radius);
-            context.lineTo(x + width, y + height - radius);
-            context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-            context.lineTo(x + radius, y + height);
-            context.quadraticCurveTo(x, y + height, x, y + height - radius);
-            context.lineTo(x, y + radius);
-            context.quadraticCurveTo(x, y, x + radius, y);
-            context.closePath();
-            context.fill();
+            drawSpeedBadge();
         }
 
         function drawRoundedSquare(x, y, size, radius) {
-            context.beginPath();
-            context.moveTo(x + radius, y);
-            context.lineTo(x + size - radius, y);
-            context.quadraticCurveTo(x + size, y, x + size, y + radius);
-            context.lineTo(x + size, y + size - radius);
-            context.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
-            context.lineTo(x + radius, y + size);
-            context.quadraticCurveTo(x, y + size, x, y + size - radius);
-            context.lineTo(x, y + radius);
-            context.quadraticCurveTo(x, y, x + radius, y);
-            context.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + size - radius, y);
+            ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
+            ctx.lineTo(x + size, y + size - radius);
+            ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+            ctx.lineTo(x + radius, y + size);
+            ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.fill();
         }
 
-        function updateScoreboard() {
-            scoreValueElement.textContent = score;
-            highScoreValueElement.textContent = highScore;
+        function drawSpeedBadge() {
+            if (!snake.length) {
+                return;
+            }
+            const interval = currentInterval();
+            const pixelsPerSecond = Math.round((gridSize * 1000) / interval);
+            const head = snake[0];
+            const centerX = head.x * gridSize + gridSize / 2;
+            const topY = head.y * gridSize;
+            const text = `${pixelsPerSecond} px/s`;
+            ctx.font = "16px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const textWidth = ctx.measureText(text).width;
+            const paddingX = textWidth / 2 + 8;
+            const paddingY = 14;
+            const badgeX = centerX - paddingX;
+            const badgeY = Math.max(12, topY - gridSize * 0.75);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+            drawRoundedRect(badgeX, badgeY, paddingX * 2, paddingY * 2, 10);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(text, centerX, badgeY + paddingY);
         }
 
-        function updateScoreboardLabels() {
-            const translation = translations[currentLanguage];
-            scoreLabelElement.textContent = `${translation.scoreLabel}:`;
-            highScoreLabelElement.textContent = `${translation.highScoreLabel}:`;
+        function drawRoundedRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
         }
 
-        function updateSpeedLabels() {
-            const translation = translations[currentLanguage];
-            speedLabelElement.textContent = translation.speedLabel;
+        function updateScoreDisplay() {
+            scoreValue.textContent = score;
+            highScoreValue.textContent = highScore;
+        }
+
+        function updateLabels() {
+            const locale = translations[currentLanguage];
+            titleEl.textContent = locale.title;
+            document.title = locale.pageTitle;
+            languageLabel.textContent = locale.languageLabel;
+            speedLabel.textContent = locale.speedLabel;
+            restartButton.textContent = locale.restart;
+            instructionsEl.textContent = locale.instructions;
+            creditEl.textContent = `© ${new Date().getFullYear()} ${locale.credit}`;
+            scoreLabel.textContent = `${locale.scoreLabel}:`;
+            highScoreLabel.textContent = `${locale.highScoreLabel}:`;
             Array.from(speedSelect.options).forEach(option => {
-                const label = translation.speeds[option.value];
+                const label = locale.speeds[option.value];
                 if (label) {
                     option.textContent = label;
                 }
             });
         }
 
-        function endGame() {
-            if (gameLoopId) {
-                clearInterval(gameLoopId);
+        function finishGame() {
+            isRunning = false;
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
             }
-            gameLoopId = null;
-            isGameRunning = false;
-            heldDirectionKeys.clear();
-            boostActive = false;
-            const translation = translations[currentLanguage];
-            context.fillStyle = "rgba(0, 0, 0, 0.6)";
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            context.fillStyle = "#ffffff";
-            context.font = "32px 'Segoe UI', sans-serif";
-            context.textAlign = "center";
-            context.fillText(translation.gameOver, canvas.width / 2, canvas.height / 2 - 24);
-            context.font = "20px 'Segoe UI', sans-serif";
-            context.fillText(translation.finalScore(score), canvas.width / 2, canvas.height / 2 + 8);
-            context.font = "18px 'Segoe UI', sans-serif";
-            context.fillText(translation.restartPrompt, canvas.width / 2, canvas.height / 2 + 36);
+            heldKeys.clear();
+            setBoost(false);
+            showGameOver();
+        }
+
+        function showGameOver() {
+            const locale = translations[currentLanguage];
+            ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "center";
+            ctx.font = "32px 'Segoe UI', sans-serif";
+            ctx.fillText(locale.gameOver, canvas.width / 2, canvas.height / 2 - 24);
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText(locale.finalScore(score), canvas.width / 2, canvas.height / 2 + 8);
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText(locale.restartHint, canvas.width / 2, canvas.height / 2 + 36);
+        }
+
+        function currentInterval() {
+            const base = Math.max(speedProfile.min, speedProfile.start - speedStage * speedProfile.step);
+            if (!boostActive) {
+                return base;
+            }
+            const boosted = Math.round(base * boostFactor);
+            const floor = Math.round(speedProfile.min * boostFactor);
+            return Math.max(floor, boosted);
+        }
+
+        function restartLoop() {
+            if (!isRunning) {
+                return;
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            intervalId = setInterval(tick, currentInterval());
+        }
+
+        function applySpeedProfile(persist = false) {
+            let preset = speedSelect.value;
+            if (!speedProfiles[preset]) {
+                preset = "normal";
+                speedSelect.value = preset;
+            }
+            speedProfile = speedProfiles[preset];
+            if (persist) {
+                localStorage.setItem(storageKeys.speed, preset);
+                showToast(translations[currentLanguage].toastSpeed(speedSelect.options[speedSelect.selectedIndex].textContent));
+            }
+            restartLoop();
+        }
+
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add("visible");
+            clearTimeout(showToast.hideTimer);
+            showToast.hideTimer = setTimeout(() => {
+                toastEl.classList.remove("visible");
+            }, 1600);
+        }
+
+        function setBoost(active) {
+            if (boostActive === active) {
+                return;
+            }
+            boostActive = active;
+            restartLoop();
+        }
+
+        function setLanguage(language, updateControl = true) {
+            if (!translations[language]) {
+                language = "en";
+            }
+            currentLanguage = language;
+            if (updateControl) {
+                languageSelect.value = language;
+            }
+            document.documentElement.lang = language;
+            localStorage.setItem(storageKeys.language, language);
+            updateLabels();
         }
 
         function handleKeyDown(event) {
@@ -587,88 +656,126 @@
                 togglePause();
                 return;
             }
-
-            const newDirection = directions[event.code];
+            const newDirection = directionMap[event.code];
             if (!newDirection) {
                 return;
             }
-
-            heldDirectionKeys.add(event.code);
-            setBoostState(true);
-
-            const opposite = oppositeDirections[event.code];
-            if (opposite && velocityMatches(nextVelocity, directions[opposite])) {
+            heldKeys.add(event.code);
+            setBoost(true);
+            const opposite = opposites[event.code];
+            if (opposite && directionsEqual(nextDirection, directionMap[opposite])) {
                 return;
             }
-
-            nextVelocity = { ...newDirection };
+            nextDirection = { ...newDirection };
         }
 
         function handleKeyUp(event) {
-            if (!directions[event.code]) {
+            if (!directionMap[event.code]) {
                 return;
             }
-            heldDirectionKeys.delete(event.code);
-            if (heldDirectionKeys.size === 0) {
-                setBoostState(false);
+            heldKeys.delete(event.code);
+            if (heldKeys.size === 0) {
+                setBoost(false);
             }
         }
 
-        function velocityMatches(a, b) {
+        function directionsEqual(a, b) {
             return a.x === b.x && a.y === b.y;
         }
 
         function togglePause() {
+            if (!isRunning) {
+                return;
+            }
             isPaused = !isPaused;
         }
 
-        function setLanguage(language, updateSelect = true) {
-            if (!translations[language]) {
-                language = "en";
+        // Touch controls for mobile players
+        let touchStart = null;
+        canvas.addEventListener("touchstart", event => {
+            touchStart = event.touches[0];
+        }, { passive: true });
+
+        canvas.addEventListener("touchmove", event => {
+            if (!touchStart) {
+                return;
             }
-            currentLanguage = language;
-            const translation = translations[currentLanguage];
-            document.documentElement.lang = currentLanguage;
-            document.title = translation.pageTitle;
-            if (updateSelect) {
-                languageSelect.value = currentLanguage;
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - touchStart.clientX;
+            const deltaY = touch.clientY - touchStart.clientY;
+            const absX = Math.abs(deltaX);
+            const absY = Math.abs(deltaY);
+            if (Math.max(absX, absY) < 20) {
+                return;
             }
-            titleElement.textContent = translation.title;
-            languageLabelElement.textContent = translation.languageLabel;
-            updateSpeedLabels();
-            restartButton.textContent = translation.restart;
-            instructionsElement.textContent = translation.instructions;
-            creditsElement.textContent = `© ${currentYear} ${translation.footer}`;
-            updateScoreboardLabels();
-            updateScoreboard();
-            localStorage.setItem("snakeLanguage", currentLanguage);
+            if (absX > absY) {
+                if (deltaX > 0) {
+                    attemptDirection({ x: 1, y: 0 }, "ArrowRight");
+                } else {
+                    attemptDirection({ x: -1, y: 0 }, "ArrowLeft");
+                }
+            } else {
+                if (deltaY > 0) {
+                    attemptDirection({ x: 0, y: 1 }, "ArrowDown");
+                } else {
+                    attemptDirection({ x: 0, y: -1 }, "ArrowUp");
+                }
+            }
+            touchStart = touch;
+        }, { passive: true });
+
+        canvas.addEventListener("touchend", () => {
+            touchStart = null;
+            setBoost(false);
+        });
+
+        function attemptDirection(newDir, code) {
+            const opposite = opposites[code];
+            if (opposite && directionsEqual(nextDirection, directionMap[opposite])) {
+                return;
+            }
+            nextDirection = { ...newDir };
+            heldKeys.add(code);
+            setBoost(true);
+            clearTimeout(attemptDirection.releaseTimer);
+            attemptDirection.releaseTimer = setTimeout(() => {
+                heldKeys.delete(code);
+                setBoost(false);
+            }, 220);
         }
 
-        restartButton.addEventListener("click", resetGameState);
+        restartButton.addEventListener("click", resetGame);
         document.addEventListener("keydown", handleKeyDown);
         document.addEventListener("keyup", handleKeyUp);
+
         languageSelect.addEventListener("change", event => {
             setLanguage(event.target.value, false);
         });
+
         speedSelect.addEventListener("change", () => {
             applySpeedProfile(true);
         });
 
         window.addEventListener("resize", () => {
+            const previousLanguage = currentLanguage;
             resizeCanvas();
-            resetGameState();
-            setLanguage(currentLanguage, false);
+            resetGame();
+            setLanguage(previousLanguage, false);
         });
 
-        const savedLanguage = localStorage.getItem("snakeLanguage") || "en";
-        const savedSpeed = localStorage.getItem("snakeSpeedPreset");
-        if (savedSpeed && speedProfiles[savedSpeed]) {
-            speedSelect.value = savedSpeed;
+        function bootstrap() {
+            resizeCanvas();
+            const savedLanguage = localStorage.getItem(storageKeys.language) || "en";
+            const savedSpeed = localStorage.getItem(storageKeys.speed);
+            setLanguage(savedLanguage);
+            if (savedSpeed && speedProfiles[savedSpeed]) {
+                speedSelect.value = savedSpeed;
+            }
+            highScoreValue.textContent = highScore;
+            resetGame();
         }
-        resizeCanvas();
-        setLanguage(savedLanguage);
-        highScoreValueElement.textContent = highScore;
-        resetGameState();
+
+        bootstrap();
     </script>
 </body>
 </html>
