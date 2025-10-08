@@ -73,7 +73,7 @@ public class App {
         JMenu settingsMenu = new JMenu("Configuración");
         JMenuItem editSettings = new JMenuItem("Editar ajustes...");
         editSettings.addActionListener(e -> {
-            SettingsDialog dialog = new SettingsDialog(frame, settings, updated -> {
+            SettingsDialog dialog = new SettingsDialog(frame, settings, SETTINGS_MANAGER.getSettingsPath(), updated -> {
                 panel.applySettings();
                 applyWindowSize(frame, updated);
                 updateScaleMenuSelection(updated.getUiScale());

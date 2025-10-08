@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -23,13 +24,15 @@ public class SettingsDialog extends JDialog {
     private final JSpinner widthSpinner;
     private final JSpinner heightSpinner;
     private final JTextArea jsonEditor;
+    private final Path settingsPath;
     private final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
-    public SettingsDialog(Frame owner, Settings settings, Consumer<Settings> onApply) {
+    public SettingsDialog(Frame owner, Settings settings, Path settingsPath, Consumer<Settings> onApply) {
         super(owner, "Ajustes", true);
         this.settings = settings;
         this.workingCopy = settings.copy();
         this.onApply = onApply;
+        this.settingsPath = settingsPath;
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(12, 12));
@@ -127,8 +130,14 @@ public class SettingsDialog extends JDialog {
     private JPanel createJsonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JScrollPane(jsonEditor), BorderLayout.CENTER);
-        JLabel infoLabel = new JLabel("Modifique el JSON y presione Guardar para aplicar los cambios.");
-        panel.add(infoLabel, BorderLayout.SOUTH);
+
+        JPanel infoPanel = new JPanel(new GridLayout(0, 1));
+        infoPanel.add(new JLabel("Modifique el JSON y presione Guardar para aplicar los cambios."));
+        if (settingsPath != null) {
+            infoPanel.add(new JLabel("Archivo de configuración: " + settingsPath));
+        }
+
+        panel.add(infoPanel, BorderLayout.SOUTH);
         return panel;
     }
 
