@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <link rel="stylesheet" href="game.css">
+    <script src="game.js" defer></script>
+</head>
+<body>
+    <header id="menu">
+        <h1 id="title">Snake</h1>
+        <div class="menu-block">
+            <label for="language-select" id="language-label">Language</label>
+            <select id="language-select">
+                <option value="en">English</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+        <div class="menu-block">
+            <label for="speed-select" id="speed-label">Speed</label>
+            <select id="speed-select">
+                <option value="slow">Slow</option>
+                <option value="normal" selected>Normal</option>
+                <option value="fast">Fast</option>
+            </select>
+        </div>
+        <div class="menu-block" id="scoreboard">
+            <span><span id="score-label">Score:</span> <strong id="score-value">0</strong></span>
+            <span><span id="high-score-label">High score:</span> <strong id="high-score-value">0</strong></span>
+        </div>
+        <button id="restart-button" type="button">Restart game</button>
+    </header>
+    <main>
+        <canvas id="game"></canvas>
+        <div id="info-panel">
+            <p class="instructions" id="instructions">Use Arrow keys or WASD to move the snake. Hold a direction to boost a little. Press Space to pause or resume.</p>
+            <p class="credit" id="credit">© Snake Game</p>
+        </div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+</body>
+</html>
