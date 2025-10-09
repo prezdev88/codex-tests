@@ -1,7 +1,13 @@
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.UIDefaults;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.DimensionUIResource;
+import javax.swing.plaf.InsetsUIResource;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +31,16 @@ public class RunGui {
     private static final Path ROOT = Paths.get("").toAbsolutePath();
     private static final String PROJECT_FILE_NAME = "project.json";
     private static final int MAX_SCAN_DEPTH = 6;
+
+    private static final Map<Object, Font> BASE_DEFAULT_FONTS = new LinkedHashMap<>();
+    private static final Map<Object, Insets> BASE_DEFAULT_INSETS = new LinkedHashMap<>();
+    private static final Map<Object, Dimension> BASE_DEFAULT_DIMENSIONS = new LinkedHashMap<>();
+    private static boolean defaultsCaptured = false;
+
+    private static final String BASE_FONT_PROPERTY = "codex.baseFont";
+    private static final String BASE_BORDER_INSETS_PROPERTY = "codex.baseBorderInsets";
+    private static final String BASE_MARGIN_PROPERTY = "codex.baseMargin";
+    private static final String BASE_DIVIDER_PROPERTY = "codex.baseDivider";
 
     private final DefaultListModel<Project> projectModel = new DefaultListModel<>();
     private final JList<Project> projectList = new JList<>(projectModel);
@@ -38,8 +53,12 @@ public class RunGui {
     private List<Project> projects = List.of();
 
     public static void main(String[] args) {
+        System.setProperty("swing.aatext", "true");
+        System.setProperty("awt.useSystemAAFontSettings", "on");
         SwingUtilities.invokeLater(() -> {
             setupDarkTheme();
+            applyDesktopHints();
+            captureBaseDefaults();
             new RunGui().start();
         });
     }
@@ -77,10 +96,14 @@ public class RunGui {
         UIManager.put("Label.foreground", foreground);
     }
 
+    private JFrame frame;
+
     private void buildUi() {
-        JFrame frame = new JFrame("Codex Project Launcher");
+        frame = new JFrame("Codex Project Launcher");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setMinimumSize(new Dimension(960, 600));
+
+        frame.setJMenuBar(createMenuBar());
 
         projectList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         projectList.setCellRenderer(new ProjectCellRenderer());
@@ -136,8 +159,23 @@ public class RunGui {
         frame.add(mainSplit, BorderLayout.CENTER);
         frame.add(bottomPanel, BorderLayout.SOUTH);
 
+        registerComponentTree(frame.getJMenuBar());
+        registerComponentTree(frame.getContentPane());
+        applyScaleToComponentTree(frame.getJMenuBar(), currentScale);
+        applyScaleToComponentTree(frame.getContentPane(), currentScale);
+        registerAccelerators(frame);
+
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        refreshScaledUI();
+    }
+
+    private static void applyDesktopHints() {
+        Toolkit toolkit = Toolkit.getDefaultToolkit();
+        Object desktopHints = toolkit.getDesktopProperty("awt.font.desktophints");
+        if (desktopHints instanceof Map<?, ?> hints) {
+            hints.forEach((key, value) -> UIManager.put(key, value));
+        }
     }
 
     private void populateProjects() {
@@ -446,6 +484,261 @@ public class RunGui {
             return Collections.unmodifiableList(result);
         }
         return List.of();
+    }
+
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu viewMenu = new JMenu("View");
+        viewMenu.setMnemonic(KeyEvent.VK_V);
+
+        JMenuItem increaseFont = new JMenuItem("Increase UI scale");
+        increaseFont.setMnemonic(KeyEvent.VK_I);
+        increaseFont.addActionListener(e -> adjustGlobalFontScale(1.12f));
+
+        JMenuItem decreaseFont = new JMenuItem("Decrease UI scale");
+        decreaseFont.setMnemonic(KeyEvent.VK_D);
+        decreaseFont.addActionListener(e -> adjustGlobalFontScale(1f / 1.12f));
+
+        JMenuItem resetFont = new JMenuItem("Reset UI scale");
+        resetFont.setMnemonic(KeyEvent.VK_R);
+        resetFont.addActionListener(e -> adjustGlobalFontScale(1.0f, true));
+
+        viewMenu.add(increaseFont);
+        viewMenu.add(decreaseFont);
+        viewMenu.addSeparator();
+        viewMenu.add(resetFont);
+
+        menuBar.add(viewMenu);
+        return menuBar;
+    }
+
+    private float currentScale = 1.0f;
+
+    private void adjustGlobalFontScale(float factor) {
+        adjustGlobalFontScale(factor, false);
+    }
+
+    private void adjustGlobalFontScale(float factor, boolean reset) {
+        currentScale = reset ? 1.0f : Math.max(0.6f, Math.min(2.4f, currentScale * factor));
+        refreshScaledUI();
+    }
+
+    private void refreshScaledUI() {
+        applyScaleToUIDefaults(currentScale);
+        applyScaleToComponentTree(frame.getJMenuBar(), currentScale);
+        applyScaleToComponentTree(frame.getContentPane(), currentScale);
+        if (frame != null) {
+            SwingUtilities.updateComponentTreeUI(frame);
+            frame.invalidate();
+            frame.validate();
+            frame.repaint();
+        }
+    }
+
+    private void registerAccelerators(JFrame frame) {
+        if (frame == null) {
+            return;
+        }
+        JRootPane rootPane = frame.getRootPane();
+        if (rootPane == null) {
+            return;
+        }
+
+        int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = rootPane.getActionMap();
+
+        KeyStroke[] increaseStrokes = new KeyStroke[]{
+                KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, shortcutMask | KeyEvent.SHIFT_DOWN_MASK),
+                KeyStroke.getKeyStroke(KeyEvent.VK_PLUS, shortcutMask),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ADD, shortcutMask)
+        };
+        KeyStroke[] decreaseStrokes = new KeyStroke[]{
+                KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, shortcutMask),
+                KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, shortcutMask)
+        };
+
+        for (KeyStroke stroke : increaseStrokes) {
+            if (stroke != null) {
+                inputMap.put(stroke, "increaseScale");
+            }
+        }
+        for (KeyStroke stroke : decreaseStrokes) {
+            if (stroke != null) {
+                inputMap.put(stroke, "decreaseScale");
+            }
+        }
+
+        actionMap.put("increaseScale", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                adjustGlobalFontScale(1.12f);
+            }
+        });
+
+        actionMap.put("decreaseScale", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                adjustGlobalFontScale(1f / 1.12f);
+            }
+        });
+    }
+
+    private void registerComponentTree(Component component) {
+        if (component == null) {
+            return;
+        }
+
+        if (component instanceof JComponent jComponent) {
+            if (jComponent.getClientProperty(BASE_FONT_PROPERTY) == null) {
+                Font font = jComponent.getFont();
+                if (font != null) {
+                    jComponent.putClientProperty(BASE_FONT_PROPERTY, font);
+                }
+            }
+
+            if (jComponent.getClientProperty(BASE_BORDER_INSETS_PROPERTY) == null) {
+                if (jComponent.getBorder() instanceof EmptyBorder emptyBorder) {
+                    Insets insets = emptyBorder.getBorderInsets(jComponent);
+                    jComponent.putClientProperty(BASE_BORDER_INSETS_PROPERTY, new Insets(insets.top, insets.left, insets.bottom, insets.right));
+                }
+            }
+        }
+
+        if (component instanceof AbstractButton button) {
+            if (button.getClientProperty(BASE_MARGIN_PROPERTY) == null) {
+                Insets margin = button.getMargin();
+                if (margin != null) {
+                    button.putClientProperty(BASE_MARGIN_PROPERTY, new Insets(margin.top, margin.left, margin.bottom, margin.right));
+                }
+            }
+        }
+
+        if (component instanceof JSplitPane splitPane) {
+            if (splitPane.getClientProperty(BASE_DIVIDER_PROPERTY) == null) {
+                splitPane.putClientProperty(BASE_DIVIDER_PROPERTY, splitPane.getDividerSize());
+            }
+        }
+
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                registerComponentTree(child);
+            }
+        }
+        if (component instanceof JMenuBar menuBar) {
+            for (int i = 0; i < menuBar.getMenuCount(); i++) {
+                registerComponentTree(menuBar.getMenu(i));
+            }
+        }
+        if (component instanceof JMenu menu) {
+            for (int i = 0; i < menu.getItemCount(); i++) {
+                registerComponentTree(menu.getItem(i));
+            }
+        }
+    }
+
+    private void applyScaleToComponentTree(Component component, float scale) {
+        if (component == null) {
+            return;
+        }
+
+        if (component instanceof JComponent jComponent) {
+            Font baseFont = (Font) jComponent.getClientProperty(BASE_FONT_PROPERTY);
+            if (baseFont != null) {
+                jComponent.setFont(baseFont.deriveFont(baseFont.getSize2D() * scale));
+            }
+
+            Insets baseBorderInsets = (Insets) jComponent.getClientProperty(BASE_BORDER_INSETS_PROPERTY);
+            if (baseBorderInsets != null) {
+                jComponent.setBorder(new EmptyBorder(scaleValue(baseBorderInsets.top, scale),
+                        scaleValue(baseBorderInsets.left, scale),
+                        scaleValue(baseBorderInsets.bottom, scale),
+                        scaleValue(baseBorderInsets.right, scale)));
+            }
+        }
+
+        if (component instanceof AbstractButton button) {
+            Insets baseMargin = (Insets) button.getClientProperty(BASE_MARGIN_PROPERTY);
+            if (baseMargin != null) {
+                button.setMargin(new Insets(scaleValue(baseMargin.top, scale),
+                        scaleValue(baseMargin.left, scale),
+                        scaleValue(baseMargin.bottom, scale),
+                        scaleValue(baseMargin.right, scale)));
+            }
+        }
+
+        if (component instanceof JSplitPane splitPane) {
+            Integer baseDivider = (Integer) splitPane.getClientProperty(BASE_DIVIDER_PROPERTY);
+            if (baseDivider != null) {
+                splitPane.setDividerSize(scaleValue(baseDivider, scale));
+            }
+        }
+
+        if (component instanceof JList<?> list) {
+            list.setFixedCellHeight(-1);
+            list.setFixedCellWidth(-1);
+        }
+
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyScaleToComponentTree(child, scale);
+            }
+        }
+        if (component instanceof JMenuBar menuBar) {
+            for (int i = 0; i < menuBar.getMenuCount(); i++) {
+                JMenu menu = menuBar.getMenu(i);
+                applyScaleToComponentTree(menu, scale);
+            }
+        }
+        if (component instanceof JMenu menu) {
+            for (int i = 0; i < menu.getItemCount(); i++) {
+                JMenuItem item = menu.getItem(i);
+                if (item != null) {
+                    applyScaleToComponentTree(item, scale);
+                }
+            }
+        }
+    }
+
+    private static void captureBaseDefaults() {
+        if (defaultsCaptured) {
+            return;
+        }
+        UIDefaults defaults = UIManager.getLookAndFeelDefaults();
+        for (Object key : defaults.keySet()) {
+            Object value = defaults.get(key);
+            if (value instanceof Font font) {
+                BASE_DEFAULT_FONTS.put(key, font);
+            } else if (value instanceof Insets insets) {
+                BASE_DEFAULT_INSETS.put(key, new Insets(insets.top, insets.left, insets.bottom, insets.right));
+            } else if (value instanceof Dimension dimension) {
+                BASE_DEFAULT_DIMENSIONS.put(key, new Dimension(dimension));
+            }
+        }
+        defaultsCaptured = true;
+    }
+
+    private static void applyScaleToUIDefaults(float scale) {
+        UIDefaults defaults = UIManager.getLookAndFeelDefaults();
+        BASE_DEFAULT_FONTS.forEach((key, font) -> defaults.put(key, font.deriveFont(font.getSize2D() * scale)));
+        BASE_DEFAULT_INSETS.forEach((key, insets) -> defaults.put(key, new InsetsUIResource(
+                scaleValue(insets.top, scale),
+                scaleValue(insets.left, scale),
+                scaleValue(insets.bottom, scale),
+                scaleValue(insets.right, scale)
+        )));
+        BASE_DEFAULT_DIMENSIONS.forEach((key, dimension) -> defaults.put(key, new DimensionUIResource(
+                scaleValue(dimension.width, scale),
+                scaleValue(dimension.height, scale)
+        )));
+    }
+
+    private static int scaleValue(int base, float scale) {
+        if (base == 0) {
+            return 0;
+        }
+        int scaled = Math.round(base * scale);
+        return Math.max(1, scaled);
     }
 
     @SuppressWarnings("unchecked")
