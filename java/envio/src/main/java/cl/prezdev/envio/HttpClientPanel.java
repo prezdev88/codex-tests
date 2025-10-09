@@ -40,7 +40,6 @@ public class HttpClientPanel extends JPanel {
 
     private final JComboBox<HttpMethod> methodComboBox = new JComboBox<>(HttpMethod.values());
     private final JTextField urlField = new JTextField("https://jsonplaceholder.typicode.com/posts/1", 40);
-    private final JTextArea requestBodyArea = createTextArea(8);
     private final JTextArea rawRequestArea = createTextArea(TEXT_AREA_ROWS / 2);
     private final JTextArea rawResponseArea = createTextArea(TEXT_AREA_ROWS / 2);
     private final JButton sendButton = new JButton();
@@ -55,6 +54,7 @@ public class HttpClientPanel extends JPanel {
     private final HttpClientService httpClientService = new HttpClientService();
     private final StyleContext styleContext = new StyleContext();
     private final DefaultStyledDocument jsonDocument = new DefaultStyledDocument(styleContext);
+    private final JTextArea requestBodyArea = createTextArea(8);
     private final Style defaultStyle;
     private final Style keyStyle;
     private final Style stringStyle;
@@ -143,6 +143,62 @@ public class HttpClientPanel extends JPanel {
                 bodyTabsSplit.setDividerLocation(0.8);
             }
         });
+    }
+
+    private String formatRequestBodyIfJson(String body, boolean updateArea) {
+        if (body == null) {
+            body = "";
+        }
+        String trimmed = body.trim();
+        if (trimmed.isEmpty()) {
+            if (updateArea) {
+                requestBodyArea.setText("");
+                requestBodyArea.setCaretPosition(0);
+            }
+            return "";
+        }
+        try {
+            JsonNode node = jsonMapper.readTree(body);
+            String pretty = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(node);
+            if (updateArea && !pretty.equals(body)) {
+                requestBodyArea.setText(pretty);
+                requestBodyArea.setCaretPosition(0);
+            }
+            return pretty;
+        } catch (JsonProcessingException ex) {
+            if (updateArea && !body.equals(requestBodyArea.getText())) {
+                requestBodyArea.setText(body);
+                requestBodyArea.setCaretPosition(0);
+            }
+            return body;
+        }
+    }
+
+    public void applySample(HttpMethod method, String url, String body, String statusMessage) {
+        if (method != null) {
+            methodComboBox.setSelectedItem(method);
+        }
+        if (url != null) {
+            urlField.setText(url);
+        }
+        if (method != null && method.allowsBody()) {
+            String formattedBody = formatRequestBodyIfJson(body, true);
+        } else {
+            requestBodyArea.setText("");
+        }
+        requestBodyArea.setCaretPosition(0);
+        lastStatusCode = -1;
+        rawRequestArea.setText("");
+        rawResponseArea.setText("");
+        rawRequestArea.setCaretPosition(0);
+        rawResponseArea.setCaretPosition(0);
+        resultTabs.setSelectedIndex(0);
+        if (statusMessage != null && !statusMessage.isBlank()) {
+            showCustomStatus(statusMessage, false);
+        } else {
+            showStatusReady();
+        }
+        updateStatusCodeLabel();
     }
 
     public void setUiScale(float scale) {
@@ -467,15 +523,23 @@ public class HttpClientPanel extends JPanel {
             return;
         }
 
+        if (method != null && method.allowsBody()) {
+            body = formatRequestBodyIfJson(body, true);
+        } else {
+            body = "";
+        }
+
         lastStatusCode = -1;
 
         sendButton.setEnabled(false);
         showStatusCalling();
 
+        String requestBodyToSend = body;
+
         SwingWorker<HttpInteractionResult, Void> worker = new SwingWorker<>() {
             @Override
             protected HttpInteractionResult doInBackground() {
-                return httpClientService.execute(method, url, body);
+                return httpClientService.execute(method, url, requestBodyToSend);
             }
 
             @Override
@@ -520,6 +584,7 @@ public class HttpClientPanel extends JPanel {
                 UIManager.getColor("Panel.background"));
         if (!bodyEnabled) {
             requestBodyArea.setText("");
+            requestBodyArea.setCaretPosition(0);
         }
     }
 
@@ -563,7 +628,7 @@ public class HttpClientPanel extends JPanel {
     }
 
     private JTextPane createJsonTextPane() {
-        JTextPane pane = new NonWrappingTextPane(jsonDocument);
+        JTextPane pane = new JTextPane(jsonDocument);
         pane.setEditable(false);
         pane.setFont(baseMonospacedFont);
         pane.setMargin(new Insets(8, 8, 8, 8));
@@ -594,6 +659,7 @@ public class HttpClientPanel extends JPanel {
     private void updateJsonDisplay(String formattedBody) {
         lastFormattedBody = formattedBody != null ? formattedBody : "";
         applyJsonHighlight(lastFormattedBody);
+        jsonResponsePane.setCaretPosition(0);
         updateJsonTree(lastFormattedBody);
     }
 
@@ -669,8 +735,6 @@ public class HttpClientPanel extends JPanel {
 
             index++;
         }
-
-        jsonResponsePane.setCaretPosition(0);
     }
 
     private void updateJsonTree(String formattedBody) {
@@ -731,17 +795,6 @@ public class HttpClientPanel extends JPanel {
         COMPLETED,
         ERROR_WITH_DETAIL,
         CUSTOM
-    }
-
-    private static class NonWrappingTextPane extends JTextPane {
-        NonWrappingTextPane(javax.swing.text.StyledDocument document) {
-            super(document);
-        }
-
-        @Override
-        public boolean getScrollableTracksViewportWidth() {
-            return false;
-        }
     }
 
 }

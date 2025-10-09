@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class App {
@@ -102,6 +103,22 @@ public class App {
         }
         menuBar.add(languageMenu);
 
+        JMenu samplesMenu = new JMenu(texts.samplesMenu());
+        for (ApiSample sample : sampleApis()) {
+            JMenuItem item = new JMenuItem(sample.name());
+            if (sample.description() != null && !sample.description().isBlank()) {
+                item.setToolTipText(sample.description());
+            }
+            item.addActionListener(e -> panel.applySample(
+                    sample.method(),
+                    sample.url(),
+                    sample.body(),
+                    String.format(texts.sampleLoadedPattern(), sample.name())
+            ));
+            samplesMenu.add(item);
+        }
+        menuBar.add(samplesMenu);
+
         return menuBar;
     }
 
@@ -145,5 +162,48 @@ public class App {
         frame.repaint();
         updateScaleMenuSelection(settings.getUiScale());
         updateLanguageMenuSelection(language);
+    }
+
+    private static List<ApiSample> sampleApis() {
+        return List.of(
+                new ApiSample(
+                        "JSONPlaceholder · Post 1",
+                        "Obtiene un post de ejemplo desde jsonplaceholder.typicode.com",
+                        HttpMethod.GET,
+                        "https://jsonplaceholder.typicode.com/posts/1",
+                        null
+                ),
+                new ApiSample(
+                        "JSONPlaceholder · Crear Post",
+                        "Envía un POST de ejemplo a jsonplaceholder.typicode.com",
+                        HttpMethod.POST,
+                        "https://jsonplaceholder.typicode.com/posts",
+                        "{\n  \"title\": \"foo\",\n  \"body\": \"bar\",\n  \"userId\": 1\n}"
+                ),
+                new ApiSample(
+                        "ReqRes · Usuario",
+                        "Obtiene un usuario de reqres.in",
+                        HttpMethod.GET,
+                        "https://reqres.in/api/users/2",
+                        null
+                ),
+                new ApiSample(
+                        "Cat Facts",
+                        "Devuelve un dato curioso sobre gatos",
+                        HttpMethod.GET,
+                        "https://catfact.ninja/fact",
+                        null
+                ),
+                new ApiSample(
+                        "Advice Slip",
+                        "Recibe un consejo aleatorio",
+                        HttpMethod.GET,
+                        "https://api.adviceslip.com/advice",
+                        null
+                )
+        );
+    }
+
+    private record ApiSample(String name, String description, HttpMethod method, String url, String body) {
     }
 }

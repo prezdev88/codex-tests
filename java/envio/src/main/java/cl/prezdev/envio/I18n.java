@@ -20,7 +20,9 @@ public final class I18n {
                 "Editar ajustes...",
                 "Idioma",
                 "Español",
-                "Inglés"
+                "Inglés",
+                "APIs de prueba",
+                "Plantilla aplicada: %s"
         ));
         APP_TEXTS.put(Language.EN, new AppTexts(
                 "HTTP Client Viewer",
@@ -32,7 +34,9 @@ public final class I18n {
                 "Edit preferences...",
                 "Language",
                 "Spanish",
-                "English"
+                "English",
+                "Sample APIs",
+                "Loaded sample: %s"
         ));
 
         PANEL_TEXTS.put(Language.ES, new PanelTexts(
@@ -45,8 +49,8 @@ public final class I18n {
                 "La URL es obligatoria",
                 "Operación completada",
                 detalle -> "Error ejecutando la petición: " + detalle,
-                "Árbol JSON",
                 "JSON formateado",
+                "Árbol JSON",
                 "Request crudo",
                 "Response crudo",
                 "Sin datos",
@@ -99,7 +103,9 @@ public final class I18n {
             String editSettings,
             String languageMenu,
             String languageSpanish,
-            String languageEnglish
+            String languageEnglish,
+            String samplesMenu,
+            String sampleLoadedPattern
     ) {
     }
 
