@@ -20,6 +20,9 @@ import java.awt.event.ItemEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseWheelEvent;
+import javax.swing.SwingUtilities;
 
 import cl.prezdev.envio.I18n.PanelTexts;
 
@@ -33,6 +36,7 @@ public class HttpClientPanel extends JPanel {
     private static final float MAX_CODE_FONT_SCALE = 3.0f;
     private static final String CODE_FONT_SCALE_PROPERTY = "code-font-scale";
     private static final String CODE_FONT_ID_PROPERTY = "code-font-id";
+    private static final String TAB_SCROLL_LISTENER_KEY = "tab-scroll-listener";
 
     private final JComboBox<HttpMethod> methodComboBox = new JComboBox<>(HttpMethod.values());
     private final JTextField urlField = new JTextField("https://jsonplaceholder.typicode.com/posts/1", 40);
@@ -41,11 +45,13 @@ public class HttpClientPanel extends JPanel {
     private final JTextArea rawResponseArea = createTextArea(TEXT_AREA_ROWS / 2);
     private final JButton sendButton = new JButton();
     private final JLabel statusLabel = new JLabel();
+    private final JLabel statusCodeLabel = new JLabel();
     private final JLabel methodLabel = new JLabel();
     private final JLabel urlLabel = new JLabel();
     private final JLabel requestBodyLabel = new JLabel();
     private final JTabbedPane resultTabs = new JTabbedPane();
     private JSplitPane bodyTabsSplit;
+    private int lastStatusCode = -1;
     private final HttpClientService httpClientService = new HttpClientService();
     private final StyleContext styleContext = new StyleContext();
     private final DefaultStyledDocument jsonDocument = new DefaultStyledDocument(styleContext);
@@ -375,6 +381,16 @@ public class HttpClientPanel extends JPanel {
         }
         statusLabel.setText(message);
         statusLabel.setForeground(currentStatusIsError ? errorStatusColor : defaultStatusColor);
+        updateStatusCodeLabel();
+    }
+
+    private void updateStatusCodeLabel() {
+        PanelTexts texts = I18n.panel(currentLanguage);
+        if (lastStatusCode > 0) {
+            statusCodeLabel.setText(String.format(texts.statusCodePattern(), lastStatusCode));
+        } else {
+            statusCodeLabel.setText("—");
+        }
     }
 
     private JPanel createMethodPanel() {
@@ -416,10 +432,13 @@ public class HttpClientPanel extends JPanel {
         rawRequestArea.setEditable(false);
         rawResponseArea.setEditable(false);
         rawRequestArea.setLineWrap(false);
+        rawRequestArea.setWrapStyleWord(false);
         rawResponseArea.setLineWrap(false);
+        rawResponseArea.setWrapStyleWord(false);
 
         resultTabs.removeAll();
         resultTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        resultTabs.setFocusable(false);
         resultTabs.addTab("", createScrollPaneForTab(jsonResponsePane));
         resultTabs.addTab("", createScrollPaneForTab(jsonTree));
         resultTabs.addTab("", createScrollPaneForTab(rawRequestArea));
@@ -430,9 +449,11 @@ public class HttpClientPanel extends JPanel {
     }
 
     private JPanel createStatusPanel() {
-        JPanel statusPanel = new JPanel(new BorderLayout());
+        JPanel statusPanel = new JPanel(new BorderLayout(8, 0));
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        statusCodeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         statusPanel.add(statusLabel, BorderLayout.WEST);
+        statusPanel.add(statusCodeLabel, BorderLayout.EAST);
         return statusPanel;
     }
 
@@ -445,6 +466,8 @@ public class HttpClientPanel extends JPanel {
             showStatusUrlRequired();
             return;
         }
+
+        lastStatusCode = -1;
 
         sendButton.setEnabled(false);
         showStatusCalling();
@@ -461,7 +484,10 @@ public class HttpClientPanel extends JPanel {
                     HttpInteractionResult result = get();
                     updateJsonDisplay(result.formattedBody());
                     rawRequestArea.setText(result.rawRequest());
+                    rawRequestArea.setCaretPosition(0);
                     rawResponseArea.setText(result.rawResponse());
+                    rawResponseArea.setCaretPosition(0);
+                    lastStatusCode = result.statusCode();
                     boolean hasError = result.hasError();
                     if (hasError) {
                         showCustomStatus(result.errorMessage(), true);
@@ -471,7 +497,10 @@ public class HttpClientPanel extends JPanel {
                 } catch (Exception ex) {
                     updateJsonDisplay("");
                     rawRequestArea.setText("");
+                    rawRequestArea.setCaretPosition(0);
                     rawResponseArea.setText("");
+                    rawResponseArea.setCaretPosition(0);
+                    lastStatusCode = -1;
                     showStatusErrorWithDetail(ex.getMessage());
                 } finally {
                     sendButton.setEnabled(true);
@@ -494,10 +523,35 @@ public class HttpClientPanel extends JPanel {
         }
     }
 
-    private JScrollPane createScrollPaneForTab(JComponent component) {
+        private JScrollPane createScrollPaneForTab(JComponent component) {
         JScrollPane scrollPane = new JScrollPane(component);
         scrollPane.setBorder(new EmptyBorder(8, 8, 8, 8));
+        scrollPane.setWheelScrollingEnabled(true);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+        installWheelForwarding(component);
         return scrollPane;
+    }
+
+    private void installWheelForwarding(JComponent component) {
+        if (component.getClientProperty(TAB_SCROLL_LISTENER_KEY) != null) {
+            return;
+        }
+        MouseAdapter adapter = new MouseAdapter() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (e.isControlDown()) {
+                    return;
+                }
+                JScrollPane scrollPane = (JScrollPane) SwingUtilities.getAncestorOfClass(JScrollPane.class, component);
+                if (scrollPane != null) {
+                    scrollPane.dispatchEvent(SwingUtilities.convertMouseEvent(component, e, scrollPane));
+                    e.consume();
+                }
+            }
+        };
+        component.addMouseWheelListener(adapter);
+        component.putClientProperty(TAB_SCROLL_LISTENER_KEY, adapter);
     }
 
     private JTextArea createTextArea(int rows) {
@@ -509,12 +563,13 @@ public class HttpClientPanel extends JPanel {
     }
 
     private JTextPane createJsonTextPane() {
-        JTextPane pane = new JTextPane(jsonDocument);
+        JTextPane pane = new NonWrappingTextPane(jsonDocument);
         pane.setEditable(false);
         pane.setFont(baseMonospacedFont);
         pane.setMargin(new Insets(8, 8, 8, 8));
         return pane;
     }
+
 
     private JTree createJsonTree() {
         PanelTexts texts = I18n.panel(currentLanguage);
@@ -677,4 +732,16 @@ public class HttpClientPanel extends JPanel {
         ERROR_WITH_DETAIL,
         CUSTOM
     }
+
+    private static class NonWrappingTextPane extends JTextPane {
+        NonWrappingTextPane(javax.swing.text.StyledDocument document) {
+            super(document);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return false;
+        }
+    }
+
 }

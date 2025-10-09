@@ -52,7 +52,8 @@ public final class I18n {
                 "Sin datos",
                 "No es JSON válido",
                 "Objeto",
-                "Arreglo"
+                "Arreglo",
+                "Código HTTP: %s"
         ));
 
         PANEL_TEXTS.put(Language.EN, new PanelTexts(
@@ -65,14 +66,15 @@ public final class I18n {
                 "URL is required",
                 "Operation completed",
                 detail -> "Error executing request: " + detail,
-                "JSON tree",
                 "Formatted JSON",
+                "JSON tree",
                 "Raw request",
                 "Raw response",
                 "No data",
                 "Invalid JSON",
                 "Object",
-                "Array"
+                "Array",
+                "HTTP status: %s"
         ));
     }
 
@@ -111,14 +113,15 @@ public final class I18n {
             String statusUrlRequired,
             String statusCompleted,
             java.util.function.Function<String, String> statusErrorWithDetail,
-            String tabJsonTree,
             String tabJsonFormatted,
+            String tabJsonTree,
             String tabRawRequest,
             String tabRawResponse,
             String jsonTreeNoData,
             String jsonTreeInvalid,
             String jsonTreeObject,
-            String jsonTreeArray
+            String jsonTreeArray,
+            String statusCodePattern
     ) {
         public String statusErrorWithDetail(String detail) {
             return statusErrorWithDetail.apply(detail);

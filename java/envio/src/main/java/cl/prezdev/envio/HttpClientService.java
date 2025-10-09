@@ -43,7 +43,7 @@ public class HttpClientService {
             rawResponse = buildRawResponse(response);
             String formattedBody = formatBody(response.body());
 
-            return HttpInteractionResult.success(formattedBody, rawRequest, rawResponse);
+            return HttpInteractionResult.success(formattedBody, rawRequest, rawResponse, response.statusCode());
         } catch (Exception exception) {
             return HttpInteractionResult.failure("Error: " + exception.getMessage(), rawRequest, rawResponse);
         }
