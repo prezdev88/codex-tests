@@ -20,6 +20,7 @@ public class SettingsDialog extends JDialog {
     private final Settings workingCopy;
     private final Consumer<Settings> onApply;
     private final Map<String, JSpinner> componentSpinners = new LinkedHashMap<>();
+    private final JComboBox<Language> languageCombo;
     private final JSpinner uiScaleSpinner;
     private final JSpinner widthSpinner;
     private final JSpinner heightSpinner;
@@ -37,6 +38,7 @@ public class SettingsDialog extends JDialog {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(12, 12));
 
+        this.languageCombo = createLanguageCombo();
         this.uiScaleSpinner = createUiScaleSpinner();
         this.widthSpinner = createWidthSpinner();
         this.heightSpinner = createHeightSpinner();
@@ -76,31 +78,41 @@ public class SettingsDialog extends JDialog {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
+        int row = 0;
 
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        panel.add(new JLabel("Idioma de la aplicación"), gbc);
+        gbc.gridx = 1;
+        panel.add(languageCombo, gbc);
+
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
         panel.add(new JLabel("Escala de interfaz"), gbc);
         gbc.gridx = 1;
         panel.add(uiScaleSpinner, gbc);
 
+        row++;
         gbc.gridx = 0;
-        gbc.gridy++;
+        gbc.gridy = row;
         panel.add(new JLabel("Ancho de ventana"), gbc);
         gbc.gridx = 1;
         panel.add(widthSpinner, gbc);
 
+        row++;
         gbc.gridx = 0;
-        gbc.gridy++;
+        gbc.gridy = row;
         panel.add(new JLabel("Alto de ventana"), gbc);
         gbc.gridx = 1;
         panel.add(heightSpinner, gbc);
 
+        row++;
         gbc.gridx = 0;
-        gbc.gridy++;
+        gbc.gridy = row;
         gbc.gridwidth = 2;
         panel.add(new JLabel("Zoom por componente"), gbc);
 
-        gbc.gridy++;
         gbc.gridwidth = 1;
 
         Map<String, String> labels = Map.of(
@@ -112,7 +124,9 @@ public class SettingsDialog extends JDialog {
         );
 
         for (Map.Entry<String, String> entry : labels.entrySet()) {
+            row++;
             gbc.gridx = 0;
+            gbc.gridy = row;
             panel.add(new JLabel(entry.getValue()), gbc);
             gbc.gridx = 1;
             double scaleValue = workingCopy.getComponentScale(entry.getKey());
@@ -121,7 +135,6 @@ public class SettingsDialog extends JDialog {
             spinner.addChangeListener(spinnerListener(value -> workingCopy.setComponentScale(entry.getKey(), value.floatValue())));
             componentSpinners.put(entry.getKey(), spinner);
             panel.add(spinner, gbc);
-            gbc.gridy++;
         }
 
         return panel;
@@ -168,6 +181,29 @@ public class SettingsDialog extends JDialog {
         JTextArea editor = new JTextArea(20, 60);
         editor.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         return editor;
+    }
+
+    private JComboBox<Language> createLanguageCombo() {
+        JComboBox<Language> combo = new JComboBox<>(Language.values());
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Language language) {
+                    setText(language.displayName());
+                }
+                return this;
+            }
+        });
+        combo.setSelectedItem(workingCopy.getLanguageEnum());
+        combo.addActionListener(e -> {
+            Language selected = (Language) combo.getSelectedItem();
+            if (selected != null) {
+                workingCopy.setLanguageEnum(selected);
+                refreshJsonEditor();
+            }
+        });
+        return combo;
     }
 
     private ChangeListener spinnerListener(Consumer<Number> consumer) {

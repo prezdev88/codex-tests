@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import cl.prezdev.envio.I18n.PanelTexts;
+
 public class HttpClientPanel extends JPanel {
 
     private static final int TEXT_AREA_ROWS = 16;
@@ -37,9 +39,13 @@ public class HttpClientPanel extends JPanel {
     private final JTextArea requestBodyArea = createTextArea(8);
     private final JTextArea rawRequestArea = createTextArea(TEXT_AREA_ROWS / 2);
     private final JTextArea rawResponseArea = createTextArea(TEXT_AREA_ROWS / 2);
-    private final JButton sendButton = new JButton("Enviar");
-    private final JLabel statusLabel = new JLabel("Listo");
-
+    private final JButton sendButton = new JButton();
+    private final JLabel statusLabel = new JLabel();
+    private final JLabel methodLabel = new JLabel();
+    private final JLabel urlLabel = new JLabel();
+    private final JLabel requestBodyLabel = new JLabel();
+    private final JTabbedPane resultTabs = new JTabbedPane();
+    private JSplitPane bodyTabsSplit;
     private final HttpClientService httpClientService = new HttpClientService();
     private final StyleContext styleContext = new StyleContext();
     private final DefaultStyledDocument jsonDocument = new DefaultStyledDocument(styleContext);
@@ -56,10 +62,20 @@ public class HttpClientPanel extends JPanel {
     private final Map<String, JComponent> codeZoomComponents = new LinkedHashMap<>();
     private final Settings settings;
     private final Consumer<Settings> settingsChangedListener;
+    private Language currentLanguage = Language.ES;
+    private String lastFormattedBody = "";
+    private StatusKey currentStatusKey = StatusKey.READY;
+    private String currentStatusDetail = "";
+    private String currentStatusCustomMessage = "";
+    private boolean currentStatusIsError = false;
+    private final Color errorStatusColor = new Color(255, 105, 97);
+    private final Color defaultStatusColor;
 
     public HttpClientPanel(Settings settings, Consumer<Settings> settingsChangedListener) {
         this.settings = settings;
         this.settingsChangedListener = settingsChangedListener;
+        this.currentLanguage = settings.getLanguageEnum();
+
         defaultStyle = styleContext.getStyle(StyleContext.DEFAULT_STYLE);
         keyStyle = styleContext.addStyle("json-key", defaultStyle);
         StyleConstants.setForeground(keyStyle, new Color(204, 120, 50));
@@ -76,11 +92,24 @@ public class HttpClientPanel extends JPanel {
         jsonResponsePane = createJsonTextPane();
         jsonTree = createJsonTree();
 
+        Color labelColor = UIManager.getColor("Label.foreground");
+        this.defaultStatusColor = labelColor != null ? labelColor : statusLabel.getForeground();
+        statusLabel.setForeground(defaultStatusColor);
+
         setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        add(createInputPanel(), BorderLayout.NORTH);
-        add(createResultPanel(), BorderLayout.CENTER);
+        JComponent methodPanel = createMethodPanel();
+        JComponent bodyPanel = createBodyPanel();
+        JComponent resultPanel = createResultPanel();
+
+        bodyTabsSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, bodyPanel, resultPanel);
+        bodyTabsSplit.setResizeWeight(0.8);
+        bodyTabsSplit.setOneTouchExpandable(true);
+        bodyTabsSplit.setContinuousLayout(true);
+
+        add(methodPanel, BorderLayout.NORTH);
+        add(bodyTabsSplit, BorderLayout.CENTER);
         add(createStatusPanel(), BorderLayout.SOUTH);
 
         updateJsonDisplay("");
@@ -100,6 +129,14 @@ public class HttpClientPanel extends JPanel {
         installCodeFontZoom("jsonResponse", jsonResponsePane);
         installCodeFontZoom("jsonTree", jsonTree);
         applySettings();
+        setLanguage(currentLanguage, false);
+        showStatusReady();
+
+        SwingUtilities.invokeLater(() -> {
+            if (bodyTabsSplit != null) {
+                bodyTabsSplit.setDividerLocation(0.8);
+            }
+        });
     }
 
     public void setUiScale(float scale) {
@@ -251,6 +288,7 @@ public class HttpClientPanel extends JPanel {
             component.putClientProperty(CODE_FONT_SCALE_PROPERTY, settings.getComponentScale(id));
         }
         updateCodeFonts();
+        setLanguage(settings.getLanguageEnum(), false);
     }
 
     private void persistSettings() {
@@ -259,67 +297,136 @@ public class HttpClientPanel extends JPanel {
         }
     }
 
-    private JPanel createInputPanel() {
-        JPanel container = new JPanel();
-        container.setLayout(new BorderLayout(8, 8));
+    public void setLanguage(Language language) {
+        setLanguage(language, true);
+    }
 
-        JPanel methodUrlPanel = new JPanel(new GridBagLayout());
+    public void setLanguage(Language language, boolean persist) {
+        Language resolved = language != null ? language : Language.ES;
+        this.currentLanguage = resolved;
+        applyLanguageTexts(resolved);
+        updateStatusLabel();
+        updateJsonTree(lastFormattedBody);
+        settings.setLanguageEnum(resolved);
+        if (persist) {
+            persistSettings();
+        }
+    }
+
+    private void applyLanguageTexts(Language language) {
+        PanelTexts texts = I18n.panel(language);
+        methodLabel.setText(texts.methodLabel());
+        methodLabel.setLabelFor(methodComboBox);
+        urlLabel.setText(texts.urlLabel());
+        urlLabel.setLabelFor(urlField);
+        requestBodyLabel.setText(texts.bodyLabel());
+        sendButton.setText(texts.sendButton());
+        if (resultTabs.getTabCount() >= 4) {
+            resultTabs.setTitleAt(0, texts.tabJsonFormatted());
+            resultTabs.setTitleAt(1, texts.tabJsonTree());
+            resultTabs.setTitleAt(2, texts.tabRawRequest());
+            resultTabs.setTitleAt(3, texts.tabRawResponse());
+        }
+    }
+
+    private void setStatus(StatusKey key, String detail, boolean error, String customMessage) {
+        this.currentStatusKey = key;
+        this.currentStatusDetail = detail;
+        this.currentStatusIsError = error;
+        this.currentStatusCustomMessage = customMessage;
+        updateStatusLabel();
+    }
+
+    private void showStatusReady() {
+        setStatus(StatusKey.READY, null, false, null);
+    }
+
+    private void showStatusCalling() {
+        setStatus(StatusKey.CALLING, null, false, null);
+    }
+
+    private void showStatusUrlRequired() {
+        setStatus(StatusKey.URL_REQUIRED, null, true, null);
+    }
+
+    private void showStatusCompleted() {
+        setStatus(StatusKey.COMPLETED, null, false, null);
+    }
+
+    private void showStatusErrorWithDetail(String detail) {
+        setStatus(StatusKey.ERROR_WITH_DETAIL, detail, true, null);
+    }
+
+    private void showCustomStatus(String message, boolean error) {
+        setStatus(StatusKey.CUSTOM, null, error, message);
+    }
+
+    private void updateStatusLabel() {
+        PanelTexts texts = I18n.panel(currentLanguage);
+        String message;
+        switch (currentStatusKey) {
+            case READY -> message = texts.statusReady();
+            case CALLING -> message = texts.statusCalling();
+            case URL_REQUIRED -> message = texts.statusUrlRequired();
+            case COMPLETED -> message = texts.statusCompleted();
+            case ERROR_WITH_DETAIL -> message = texts.statusErrorWithDetail(currentStatusDetail != null ? currentStatusDetail : "");
+            case CUSTOM -> message = currentStatusCustomMessage != null ? currentStatusCustomMessage : "";
+            default -> message = "";
+        }
+        statusLabel.setText(message);
+        statusLabel.setForeground(currentStatusIsError ? errorStatusColor : defaultStatusColor);
+    }
+
+    private JPanel createMethodPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 8);
         gbc.gridx = 0;
-        methodUrlPanel.add(new JLabel("Método"), gbc);
+        panel.add(methodLabel, gbc);
 
         gbc.gridx = 1;
         methodComboBox.setPreferredSize(new Dimension(120, methodComboBox.getPreferredSize().height));
-        methodUrlPanel.add(methodComboBox, gbc);
+        panel.add(methodComboBox, gbc);
 
         gbc.gridx = 2;
-        methodUrlPanel.add(new JLabel("URL"), gbc);
+        panel.add(urlLabel, gbc);
 
         gbc.gridx = 3;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        methodUrlPanel.add(urlField, gbc);
+        panel.add(urlField, gbc);
 
         gbc.gridx = 4;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        methodUrlPanel.add(sendButton, gbc);
+        panel.add(sendButton, gbc);
 
-        container.add(methodUrlPanel, BorderLayout.NORTH);
-
-        JPanel bodyPanel = new JPanel(new BorderLayout(4, 4));
-        bodyPanel.add(new JLabel("Cuerpo (JSON opcional)"), BorderLayout.NORTH);
-        bodyPanel.add(new JScrollPane(requestBodyArea), BorderLayout.CENTER);
-        container.add(bodyPanel, BorderLayout.CENTER);
-
-        return container;
+        return panel;
     }
 
-    private Component createResultPanel() {
+    private JComponent createBodyPanel() {
+        JPanel bodyPanel = new JPanel(new BorderLayout(4, 4));
+        requestBodyLabel.setBorder(new EmptyBorder(0, 0, 4, 0));
+        bodyPanel.add(requestBodyLabel, BorderLayout.NORTH);
+        bodyPanel.add(new JScrollPane(requestBodyArea), BorderLayout.CENTER);
+        return bodyPanel;
+    }
+
+    private JComponent createResultPanel() {
         rawRequestArea.setEditable(false);
         rawResponseArea.setEditable(false);
         rawRequestArea.setLineWrap(false);
         rawResponseArea.setLineWrap(false);
 
-        JSplitPane jsonSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                createTitledScrollPane("Árbol JSON", jsonTree),
-                createTitledScrollPane("Respuesta JSON formateada", jsonResponsePane));
-        jsonSplit.setResizeWeight(0.35);
-        jsonSplit.setOneTouchExpandable(true);
+        resultTabs.removeAll();
+        resultTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        resultTabs.addTab("", createScrollPaneForTab(jsonResponsePane));
+        resultTabs.addTab("", createScrollPaneForTab(jsonTree));
+        resultTabs.addTab("", createScrollPaneForTab(rawRequestArea));
+        resultTabs.addTab("", createScrollPaneForTab(rawResponseArea));
+        resultTabs.setSelectedIndex(0);
 
-        JSplitPane bottomSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                createTitledScrollPane("Request HTTP crudo", rawRequestArea),
-                createTitledScrollPane("Response HTTP crudo", rawResponseArea));
-        bottomSplit.setResizeWeight(0.5);
-        bottomSplit.setOneTouchExpandable(true);
-
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, jsonSplit, bottomSplit);
-        mainSplit.setResizeWeight(0.6);
-        mainSplit.setOneTouchExpandable(true);
-        mainSplit.setContinuousLayout(true);
-
-        return mainSplit;
+        return resultTabs;
     }
 
     private JPanel createStatusPanel() {
@@ -335,12 +442,12 @@ public class HttpClientPanel extends JPanel {
         String body = requestBodyArea.getText();
 
         if (url.isEmpty()) {
-            updateStatus("La URL es obligatoria", true);
+            showStatusUrlRequired();
             return;
         }
 
         sendButton.setEnabled(false);
-        updateStatus("Llamando al endpoint...", false);
+        showStatusCalling();
 
         SwingWorker<HttpInteractionResult, Void> worker = new SwingWorker<>() {
             @Override
@@ -356,12 +463,16 @@ public class HttpClientPanel extends JPanel {
                     rawRequestArea.setText(result.rawRequest());
                     rawResponseArea.setText(result.rawResponse());
                     boolean hasError = result.hasError();
-                    updateStatus(hasError ? result.errorMessage() : "Operación completada", hasError);
+                    if (hasError) {
+                        showCustomStatus(result.errorMessage(), true);
+                    } else {
+                        showStatusCompleted();
+                    }
                 } catch (Exception ex) {
                     updateJsonDisplay("");
                     rawRequestArea.setText("");
                     rawResponseArea.setText("");
-                    updateStatus("Error ejecutando la petición: " + ex.getMessage(), true);
+                    showStatusErrorWithDetail(ex.getMessage());
                 } finally {
                     sendButton.setEnabled(true);
                 }
@@ -383,9 +494,9 @@ public class HttpClientPanel extends JPanel {
         }
     }
 
-    private JScrollPane createTitledScrollPane(String title, JComponent component) {
+    private JScrollPane createScrollPaneForTab(JComponent component) {
         JScrollPane scrollPane = new JScrollPane(component);
-        scrollPane.setBorder(BorderFactory.createTitledBorder(title));
+        scrollPane.setBorder(new EmptyBorder(8, 8, 8, 8));
         return scrollPane;
     }
 
@@ -406,7 +517,8 @@ public class HttpClientPanel extends JPanel {
     }
 
     private JTree createJsonTree() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Sin datos");
+        PanelTexts texts = I18n.panel(currentLanguage);
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(texts.jsonTreeNoData());
         JTree tree = new JTree(new DefaultTreeModel(root));
         tree.setRootVisible(true);
         tree.setShowsRootHandles(true);
@@ -425,8 +537,9 @@ public class HttpClientPanel extends JPanel {
     }
 
     private void updateJsonDisplay(String formattedBody) {
-        applyJsonHighlight(formattedBody);
-        updateJsonTree(formattedBody);
+        lastFormattedBody = formattedBody != null ? formattedBody : "";
+        applyJsonHighlight(lastFormattedBody);
+        updateJsonTree(lastFormattedBody);
     }
 
     private void applyJsonHighlight(String text) {
@@ -506,9 +619,10 @@ public class HttpClientPanel extends JPanel {
     }
 
     private void updateJsonTree(String formattedBody) {
+        PanelTexts texts = I18n.panel(currentLanguage);
         DefaultTreeModel model = (DefaultTreeModel) jsonTree.getModel();
         if (formattedBody == null || formattedBody.isBlank()) {
-            model.setRoot(new DefaultMutableTreeNode("Sin datos"));
+            model.setRoot(new DefaultMutableTreeNode(texts.jsonTreeNoData()));
             model.reload();
             expandAllRows(jsonTree);
             return;
@@ -516,28 +630,28 @@ public class HttpClientPanel extends JPanel {
 
         try {
             JsonNode rootNode = jsonMapper.readTree(formattedBody);
-            DefaultMutableTreeNode treeRoot = buildTreeNode(null, rootNode);
+            DefaultMutableTreeNode treeRoot = buildTreeNode(null, rootNode, texts);
             model.setRoot(treeRoot);
         } catch (JsonProcessingException ex) {
-            model.setRoot(new DefaultMutableTreeNode("No es JSON válido"));
+            model.setRoot(new DefaultMutableTreeNode(texts.jsonTreeInvalid()));
         }
         model.reload();
         expandAllRows(jsonTree);
     }
 
-    private DefaultMutableTreeNode buildTreeNode(String name, JsonNode node) {
+    private DefaultMutableTreeNode buildTreeNode(String name, JsonNode node, PanelTexts texts) {
         if (node.isObject()) {
-            String label = name == null ? "Objeto" : name;
+            String label = name == null ? texts.jsonTreeObject() : name;
             DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(label);
-            node.fields().forEachRemaining(entry -> treeNode.add(buildTreeNode(entry.getKey(), entry.getValue())));
+            node.fields().forEachRemaining(entry -> treeNode.add(buildTreeNode(entry.getKey(), entry.getValue(), texts)));
             return treeNode;
         }
 
         if (node.isArray()) {
-            String label = name == null ? "Arreglo" : name;
+            String label = name == null ? texts.jsonTreeArray() : name;
             DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(label);
             for (int i = 0; i < node.size(); i++) {
-                treeNode.add(buildTreeNode("[" + i + "]", node.get(i)));
+                treeNode.add(buildTreeNode("[" + i + "]", node.get(i), texts));
             }
             return treeNode;
         }
@@ -555,8 +669,12 @@ public class HttpClientPanel extends JPanel {
         }
     }
 
-    private void updateStatus(String message, boolean error) {
-        statusLabel.setText(message);
-        statusLabel.setForeground(error ? new Color(255, 105, 97) : UIManager.getColor("Label.foreground"));
+    private enum StatusKey {
+        READY,
+        CALLING,
+        URL_REQUIRED,
+        COMPLETED,
+        ERROR_WITH_DETAIL,
+        CUSTOM
     }
 }

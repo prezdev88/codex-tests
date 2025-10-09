@@ -18,6 +18,7 @@ public class Settings {
     private int windowWidth = -1;
     @Setter
     private int windowHeight = -1;
+    private String language = Language.ES.code();
     private final Map<String, Float> componentScales = new LinkedHashMap<>();
 
     public Settings() {
@@ -26,6 +27,7 @@ public class Settings {
     public static Settings defaults() {
         Settings settings = new Settings();
         settings.uiScale = 1.0f;
+        settings.language = Language.ES.code();
         return settings;
     }
 
@@ -34,6 +36,7 @@ public class Settings {
         copy.uiScale = uiScale;
         copy.windowWidth = windowWidth;
         copy.windowHeight = windowHeight;
+        copy.language = language;
         copy.componentScales.putAll(componentScales);
         return copy;
     }
@@ -42,8 +45,27 @@ public class Settings {
         this.uiScale = other.uiScale;
         this.windowWidth = other.windowWidth;
         this.windowHeight = other.windowHeight;
+        this.language = other.language;
         this.componentScales.clear();
         this.componentScales.putAll(other.componentScales);
+    }
+
+    @JsonIgnore
+    public Language getLanguageEnum() {
+        return Language.fromCode(language);
+    }
+
+    public void setLanguage(String language) {
+        if (language == null || language.isBlank()) {
+            this.language = Language.ES.code();
+        } else {
+            this.language = language;
+        }
+    }
+
+    @JsonIgnore
+    public void setLanguageEnum(Language language) {
+        setLanguage(language != null ? language.code() : null);
     }
 
     @JsonIgnore
