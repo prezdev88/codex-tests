@@ -1,3 +1,5 @@
+## This project was conceived and crafted entirely with the Codex AI—every line is part of a shared journey of curiosity, learning, and exploration.
+
 # Codex tests
 
 This repository contains exercises and utilities built by the Codex team, including a Java Swing HTTP client and a web-based Snake game.
