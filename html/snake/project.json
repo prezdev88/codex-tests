@@ -1,0 +1,7 @@
+{
+  "id": "snake",
+  "name": "Snake Game",
+  "description": "Web-based Snake game with language and speed settings.",
+  "type": "browser",
+  "command": "html/snake/game.html"
+}

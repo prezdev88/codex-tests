@@ -1,0 +1,11 @@
+{
+  "id": "envio",
+  "name": "Envio HTTP Client",
+  "description": "Java Swing app to inspect HTTP requests and JSON responses.",
+  "type": "shell",
+  "command": "./java/envio/run.sh",
+  "requirements": [
+    "Maven 3.x",
+    "JDK 17+"
+  ]
+}
