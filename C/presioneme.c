@@ -1,3 +1,8 @@
+/*
+ * Compilación recomendada:
+ *   gcc presioneme.c -o presioneme -lX11
+ */
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdbool.h>
