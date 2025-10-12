@@ -26,4 +26,4 @@ Tras compilar, ejecute el binario:
 ./presioneme
 ```
 
-Se abrirá una ventana con un botón. Al pulsarlo se mostrará el mensaje "¡Botón presionado!" dentro de la misma ventana.
+Se abrirá una ventana con un botón. Al pulsarlo se mostrará una ventana emergente con el mensaje "¡Has presionado el botón!", similar a un `JOptionPane` de Java.
